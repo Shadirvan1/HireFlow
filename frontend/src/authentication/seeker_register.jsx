@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import api from "../api/api";
+import { GoogleLogin } from "@react-oauth/google";
+import api from "../api/api"; 
 
 export default function Seeker_register() {
   const [formData, setFormData] = useState({
@@ -10,10 +11,7 @@ export default function Seeker_register() {
   });
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -26,21 +24,33 @@ export default function Seeker_register() {
     }
   };
 
-  const handleGoogleLogin = () => {
-   
-    window.location.href = "http://127.0.0.1:8000/api/v1/accounts/google/login/";
+  const handleGoogleSuccess = async (credentialResponse) => {
+    try {
+      const token = credentialResponse.credential;
+      const response = await api.post("accounts/auth/google/", { token });
+      
+      localStorage.setItem("access_token", response.data.access);
+      localStorage.setItem("refresh_token", response.data.refresh);
+      
+      alert("Google login successful!");
+    } catch (err) {
+      console.error(err);
+      alert("Google login failed");
+    }
+  };
+
+  const handleGoogleError = () => {
+    alert("Google login failed");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 px-4">
       <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md">
-        
         <h2 className="text-3xl font-bold text-indigo-700 text-center mb-6">
           Candidate Register
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
           <input
             type="text"
             name="username"
@@ -49,7 +59,6 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
-
           <input
             type="email"
             name="email"
@@ -58,7 +67,6 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
-
           <input
             type="text"
             name="phone"
@@ -67,7 +75,6 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
-
           <input
             type="password"
             name="password"
@@ -76,7 +83,6 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
-
           <button
             type="submit"
             className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
@@ -91,20 +97,11 @@ export default function Seeker_register() {
           <div className="flex-grow h-px bg-gray-300"></div>
         </div>
 
-    
-        <button
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition duration-300 shadow-sm"
-        >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="Google"
-            className="w-5 h-5"
-          />
-          <span className="text-gray-700 font-medium">
-            Continue with Google
-          </span>
-        </button>
+
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+        />
 
         <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{" "}
