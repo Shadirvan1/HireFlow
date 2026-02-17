@@ -1,0 +1,50 @@
+# ----------------------
+# Python
+# ----------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pycache/
+*.pyc
+
+# ----------------------
+# Virtual Environment
+# ----------------------
+
+env/
+
+*.egg-info/
+*.egg
+
+# ----------------------
+# Environment Variables
+# ----------------------
+.env
+.env.*
+
+# ----------------------
+# Logs and Databases
+# ----------------------
+*.log
+*.sqlite3
+*.db
+*.db-journal
+
+# ----------------------
+# OS & Editor Files
+# ----------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.bak
+
+# ----------------------
+# Misc
+# ----------------------
+*.pem
+*.key
+*.crt
