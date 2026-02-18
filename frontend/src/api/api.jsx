@@ -1,17 +1,10 @@
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true,
 });
 
 
@@ -27,29 +20,12 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem("refresh");
-
-      if (!refreshToken) {
-        localStorage.clear();
-        window.location.href = "/login";
-        return Promise.reject(error);
-      }
-
       try {
-        const response = await axios.post(
-          `${BASE_URL}token/refresh/`,
-          { refresh: refreshToken }
-        );
-
-        const newAccessToken = response.data.access;
-
-        localStorage.setItem("access", newAccessToken);
-
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        await api.post("accounts/token/refresh/");
 
         return api(originalRequest);
+
       } catch (refreshError) {
-        localStorage.clear();
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }

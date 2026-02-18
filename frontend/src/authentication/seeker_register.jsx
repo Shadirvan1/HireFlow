@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
-import api from "../api/api"; 
+import api from "../api/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Seeker_register() {
   const [formData, setFormData] = useState({
@@ -10,37 +11,59 @@ export default function Seeker_register() {
     password: "",
   });
 
+  const [errors, setErrors] = useState({});
+  const [generalError, setGeneralError] = useState("");
+  const [loading, setLoading] = useState(false); 
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: "" });
+    setGeneralError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); 
+
     try {
-      await api.post("accounts/register/", formData);
-      alert("Registration Successful");
+      setErrors({});
+      setGeneralError("");
+
+      const data = await api.post("accounts/register/", formData);
+
+      localStorage.setItem("id", data.data.user.id);
+      localStorage.setItem("email", data.data.user.email);
+      localStorage.setItem("role", data.data.user.role);
+
+      navigate("/home");
     } catch (error) {
-      alert("Registration Failed");
+      if (error.response?.data) {
+        setErrors(error.response.data);
+      } else {
+        setGeneralError("Registration failed. Please try again.");
+      }
+    } finally {
+      setLoading(false); 
     }
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
+    setLoading(true);
     try {
       const token = credentialResponse.credential;
-      const response = await api.post("accounts/auth/google/", { token });
-      
-      localStorage.setItem("access_token", response.data.access);
-      localStorage.setItem("refresh_token", response.data.refresh);
-      
-      alert("Google login successful!");
-    } catch (err) {
-      console.error(err);
-      alert("Google login failed");
-    }
-  };
+      const data = await api.post("accounts/auth/google/", { token });
 
-  const handleGoogleError = () => {
-    alert("Google login failed");
+      localStorage.setItem("id", data.data.user.id);
+      localStorage.setItem("email", data.data.user.email);
+      localStorage.setItem("role", data.data.user.role);
+
+      navigate("/home");
+    } catch (err) {
+      alert("Google login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,6 +82,10 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
+          {errors.username && (
+            <p className="text-red-500 text-sm">{errors.username[0]}</p>
+          )}
+
           <input
             type="email"
             name="email"
@@ -67,6 +94,10 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
+          {errors.email && (
+            <p className="text-red-500 text-sm">{errors.email[0]}</p>
+          )}
+
           <input
             type="text"
             name="phone"
@@ -75,6 +106,10 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
+          {errors.phone && (
+            <p className="text-red-500 text-sm">{errors.phone[0]}</p>
+          )}
+
           <input
             type="password"
             name="password"
@@ -83,11 +118,28 @@ export default function Seeker_register() {
             onChange={handleChange}
             className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
           />
+          {errors.password && (
+            <p className="text-red-500 text-sm">{errors.password[0]}</p>
+          )}
+
+          {generalError && (
+            <p className="text-red-500 text-center">{generalError}</p>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300"
+            disabled={loading}
+            className={`w-full py-2 rounded-lg font-semibold text-white transition duration-300 flex items-center justify-center ${
+              loading
+                ? "bg-indigo-400 cursor-not-allowed"
+                : "bg-indigo-600 hover:bg-indigo-700"
+            }`}
           >
-            Create Account
+            {loading ? (
+              <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              "Create Account"
+            )}
           </button>
         </form>
 
@@ -97,18 +149,17 @@ export default function Seeker_register() {
           <div className="flex-grow h-px bg-gray-300"></div>
         </div>
 
-
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-        />
-
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Already have an account?{" "}
-          <span className="text-indigo-600 font-medium cursor-pointer hover:underline">
-            Login
-          </span>
-        </p>
+        <div className="flex justify-center ">
+          {loading ? (
+            <div className="w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => alert("Google login failed")}
+            />
+          )}
+        </div>
+        <p className="text-center text-sm text-gray-600 mt-6"> Already have an account? {" "} <span onClick={()=>navigate("/login")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> Login </span> </p>
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 
     ]
-
+CORS_ALLOW_CREDENTIALS = True
 # Application definition
 
 INSTALLED_APPS = [
@@ -70,6 +70,17 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 SPECTACULAR_SETTINGS = {
     "TITLE": "Smart Recruitment API",
     "DESCRIPTION": "API documentation for HR & Candidate system",
@@ -80,6 +91,8 @@ SPECTACULAR_SETTINGS = {
 AUTH_USER_MODEL = "accounts.User"
 
 ROOT_URLCONF = 'hireflow_main.urls'
+
+
 
 TEMPLATES = [
     {

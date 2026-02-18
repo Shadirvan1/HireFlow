@@ -38,13 +38,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     hr_password = models.CharField(max_length=56,blank=True,null=True)
     is_number_verified = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-
+    
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
     last_login = models.DateTimeField(blank=True, null=True)
-
+    verify_link = models.CharField(max_length=256,blank=True,null=True)
     objects = UserManager()
 
     USERNAME_FIELD = "email"
