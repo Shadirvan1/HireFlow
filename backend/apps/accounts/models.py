@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser , BaseUserManager,PermissionsMixin
 from django.utils import timezone
 import uuid
+import os
 
 class UserManager(BaseUserManager):
 
@@ -22,6 +23,34 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
+def company_logo_upload(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f"company/logos/{uuid.uuid4()}{ext}"
+
+
+def hr_profile_image_upload(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    user_id = instance.user.id if instance.user else "unknown"
+    return f"hr_profiles/user_{user_id}/{uuid.uuid4()}{ext}"
+
+
+def hr_certification_upload(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    user_id = instance.user.id if instance.user else "unknown"
+    return f"hr_certifications/user_{user_id}/{uuid.uuid4()}{ext}"
+
+
+def candidate_profile_image_upload(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    user_id = instance.user.id if instance.user else "unknown"
+    return f"candidate_profile/user_{user_id}/{uuid.uuid4()}{ext}"
+
+
+
+
+
+
+
 class User(AbstractBaseUser, PermissionsMixin):
 
     ROLE_CHOICES = (
@@ -34,11 +63,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     username = models.CharField(max_length=56)
     email = models.EmailField(unique=True)
-    phone = models.CharField(unique=True,null=True,blank=True)
+    phone_number = models.CharField(max_length=20,blank=True,null=True)
     hr_password = models.CharField(max_length=56,blank=True,null=True)
     is_number_verified = models.BooleanField(default=False)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES,default="CANDIDATE")
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
@@ -61,37 +89,33 @@ class Company(models.Model):
     company_size = models.CharField(max_length=100)
     headquarters = models.CharField(max_length=255)
 
-    logo = models.ImageField(upload_to="company/logos/", null=True, blank=True)
+
+    logo = models.ImageField(upload_to=company_logo_upload, null=True, blank=True)
 
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
-
 class HRProfile(models.Model):
-
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="hr_profile"
-
-    )
-
-    company = models.ForeignKey(
-      Company,
-      on_delete=models.CASCADE,
-      related_name="hr_members",
-      blank = True,null=True
-    )
-    
-
-    phone_number = models.CharField(max_length=20)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hr_profile",blank=True,null=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="hr_members", blank=True, null=True)
     linkedin_url = models.URLField(blank=True, null=True)
-
+    designation = models.CharField(max_length=100, blank=True, null=True)
+    department = models.CharField(max_length=50, blank=True, null=True)
+    ROLE_CHOICES = [('recruiter', 'Recruiter'), ('manager', 'HR Manager'), ('admin', 'Admin')]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='admin')
+    profile_image = models.ImageField(upload_to=hr_profile_image_upload, blank=True, null=True)
+    certifications = models.FileField(upload_to=hr_certification_upload, blank=True, null=True)
+ 
+    hires_count = models.PositiveIntegerField(default=0)
+    experience_years = models.PositiveIntegerField(default=0)
+    
+    receive_notifications = models.BooleanField(default=True)    
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.email} - HR"
+        return f"{self.user.email}"
 
 class CandidateProfile(models.Model):
 
@@ -115,11 +139,12 @@ class CandidateProfile(models.Model):
     expected_ctc = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     notice_period_days = models.IntegerField(default=0)
+    profile_image = models.ImageField(upload_to=candidate_profile_image_upload, blank=True, null=True)
 
     portfolio_url = models.URLField(blank=True, null=True)
     linkedin_url = models.URLField(blank=True, null=True)
     github_url = models.URLField(blank=True, null=True)
-
+    receive_notifications = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

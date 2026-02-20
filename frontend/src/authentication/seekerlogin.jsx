@@ -24,6 +24,8 @@ export default function Seekerlogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
+    setGeneralError("");
 
     try {
       const response = await api.post("accounts/login/", formData);
@@ -34,10 +36,12 @@ export default function Seekerlogin() {
 
       navigate("/home");
     } catch (error) {
+      console.log(error.response)
       if (error.response?.data) {
         setErrors(error.response.data);
+        
       } else {
-        setGeneralError("Invalid email or password");
+        setGeneralError("Something went wrong. Try again.");
       }
     } finally {
       setLoading(false);
@@ -57,7 +61,7 @@ export default function Seekerlogin() {
 
       navigate("/home");
     } catch (err) {
-      alert("Google login failed");
+      setGeneralError("Google login failed");
     } finally {
       setLoading(false);
     }
@@ -66,23 +70,30 @@ export default function Seekerlogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 px-4">
       <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md">
+
         <h2 className="text-3xl font-bold text-indigo-700 text-center mb-6">
-           Login Page
+          Job Seeker Login
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
+
           <div>
             <input
-              type="email"
+              type="text"
               name="email"
-              placeholder="Email"
-              required
+              placeholder="Email or Phone"
+              value={formData.email}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              required
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 transition duration-200 ${
+                errors.email
+                  ? "border-red-500 focus:ring-red-400 bg-red-50"
+                  : "border-gray-300 focus:ring-indigo-500"
+              }`}
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.email[0]}
+            {errors.phone_email && (
+              <p className="text-red-600 text-sm mt-1 font-medium animate-fadeIn">
+                {errors.phone_email[0]}
               </p>
             )}
           </div>
@@ -92,19 +103,26 @@ export default function Seekerlogin() {
               type="password"
               name="password"
               placeholder="Password"
-              required
+              value={formData.password}
               onChange={handleChange}
-              className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+              required
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 transition duration-200 ${
+                errors.password
+                  ? "border-red-500 focus:ring-red-400 bg-red-50"
+                  : "border-gray-300 focus:ring-indigo-500"
+              }`}
             />
             {errors.password && (
-              <p className="text-red-500 text-sm mt-1">
+              <p className="text-red-600 text-sm mt-1 font-medium animate-fadeIn">
                 {errors.password[0]}
               </p>
             )}
           </div>
 
           {generalError && (
-            <p className="text-red-500 text-center">{generalError}</p>
+            <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg border border-red-300 animate-fadeIn">
+              {generalError}
+            </div>
           )}
 
           <button
@@ -136,7 +154,7 @@ export default function Seekerlogin() {
           ) : (
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => alert("Google login failed")}
+              onError={() => setGeneralError("Google login failed")}
             />
           )}
         </div>
@@ -149,7 +167,9 @@ export default function Seekerlogin() {
           >
             Register
           </span>
+           <p className="text-center text-sm text-gray-600 mt-6"> Account{" "} <span onClick={()=>navigate("/resend/link")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> verify </span> </p>
         </p>
+
       </div>
     </div>
   );

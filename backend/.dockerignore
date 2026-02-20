@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+# Virtual environment
+
+env/
+
+
+# Environment variables
+.env
+.env.*
+
+# Git
+.git
+.gitignore
+
+# Node (if frontend inside backend)
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+Dockerfile
