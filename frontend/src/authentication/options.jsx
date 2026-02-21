@@ -10,10 +10,7 @@ export default function Options() {
       <p style={styles.subtitle}>Choose how you want to continue</p>
 
       <div style={styles.cardContainer}>
-        <div
-          style={styles.card}
-          onClick={() => navigate("/hr/profile")}
-        >
+        <div style={styles.card} onClick={() => navigate("/hr/profile")}>
           <h2>HR</h2>
           <p>Manage hiring, post jobs, and handle candidates.</p>
           <button style={styles.button}>Continue as HR</button>
@@ -21,8 +18,11 @@ export default function Options() {
 
         <div
           style={styles.card}
-          onClick={() => navigate("/candidate/profile")}
-        >
+          onClick={() => {
+            localStorage.setItem("role", "CANDIDATE");
+            navigate("/login");
+          }}
+        >                                                                                                
           <h2>Candidate</h2>
           <p>Apply for jobs and manage your profile.</p>
           <button style={styles.button}>Continue as Candidate</button>

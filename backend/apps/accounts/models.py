@@ -3,7 +3,7 @@ from django.contrib.auth.models import AbstractBaseUser , BaseUserManager,Permis
 from django.utils import timezone
 import uuid
 import os
-
+import pyotp
 class UserManager(BaseUserManager):
 
     def create_user(self, email, password=None, **extra_fields):
@@ -60,11 +60,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         ("HR", "HR"),
     )
 
+    mfa_enabled = models.BooleanField(default=False)
+    mfa_secret = models.CharField(max_length=255, blank=True, null=True)
+
+    def generate_mfa_secret(self):
+        self.mfa_secret = pyotp.random_base32()
+        self.save()
 
     username = models.CharField(max_length=56)
     email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=20,blank=True,null=True)
-    hr_password = models.CharField(max_length=56,blank=True,null=True)
+    hr_password = models.CharField(max_length=256,blank=True,null=True)
     is_number_verified = models.BooleanField(default=False)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES,default="CANDIDATE")
     is_active = models.BooleanField(default=True)

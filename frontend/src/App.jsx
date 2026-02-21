@@ -12,13 +12,18 @@ import VerifyEmailPage from "./authentication/confirmation";
 import Options from "./authentication/options";
 import HrProfile from "./profiles/hr_profile";
 import Hr_companydetails from "./profiles/hr_companydetails";
-import LoginOptions from "./authentication/loginoptions";
 import AdminDashboard from "./adminpages/dashboard";
 import Login_protector from "./protuctedrouters/login_protector";
 import ProtectedRoute from "./protuctedrouters/Protuctedroute";
 import HrDashboard from "./hrpages/dashboard";
 import Sidebar from "./adminpages/sidebar";
 import HR_details from "./adminpages/hr_details";
+import SetupMFA from "./authentication/enable_mfa";
+import DisableMFA from "./authentication/disable-mfa";
+import CandidateProfile from "./profiles/candidate";
+import CandidateDashboard from "./candidatepages/dashboard";
+import ForgotPassword from "./authentication/forgot_password";
+import ResetPassword from "./authentication/reset_password";
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -36,11 +41,16 @@ function App() {
           <Route path="/options" element={<Login_protector><Options /></Login_protector>} />
           <Route path="/hr/profile" element={<Login_protector><HrProfile /></Login_protector>} />
           <Route path="/hr/company-details" element={<Login_protector><Hr_companydetails /></Login_protector>} />
-          <Route path="/login/options" element={<Login_protector><LoginOptions /></Login_protector>} />
+          <Route path="/forgot/password" element={<Login_protector><ForgotPassword /></Login_protector>} />
+          <Route path="/reset-password/:uid/:token" element={<Login_protector><ResetPassword /></Login_protector>} />
+
+          <Route path="/hr/setup-mfa" element={<SetupMFA />} />
+          <Route path="/hr/disable-mfa" element={<DisableMFA />} />
 
           {/* ---- candidate pages ---- */}
 
-          <Route path="/home" element={<ProtectedRoute allowedRoles={['HR','CANDIDATE',"ADMIN"]}><Seeker_home /></ProtectedRoute>} />
+          <Route path="/candidate/dashboard" element={<ProtectedRoute allowedRoles={['CANDIDATE']}><CandidateDashboard /></ProtectedRoute>} />
+          <Route path="/candidate/profile" element={<ProtectedRoute allowedRoles={['CANDIDATE']}><CandidateProfile /></ProtectedRoute>} />
 
           {/* ---- hr pages ---- */}
           <Route path="/hr/dashboard" element={<ProtectedRoute allowedRoles={['HR',"ADMIN"]}><HrDashboard /></ProtectedRoute>} />

@@ -38,7 +38,7 @@ export default function Intro() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-2">
-            <button className="group px-8 py-4 bg-slate-900 text-white font-medium rounded-full shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2" onClick={()=>navigate("/hrlogin")}>
+            <button className="group px-8 py-4 bg-slate-900 text-white font-medium rounded-full shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2" onClick={()=>navigate("/hr/login")}>
               Start Hiring
               <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>

@@ -6,7 +6,7 @@ export default function Login_protector({ children }) {
     return <Navigate to="/admin/dashboard" />;
   }
   if (role === "HR") {
-    return <Navigate to="/hr/profile" />;
+    return <Navigate to="/hr/dashboard" />;
   }
   if (role === "CANDIDATE" ) {
     return <Navigate to="/home" />;

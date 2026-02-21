@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import api from "../api/api";
+import { useNavigate } from "react-router-dom";
 
 export default function HrCompanyDetails() {
   const emailFromStorage = localStorage.getItem("email");
@@ -14,7 +15,7 @@ export default function HrCompanyDetails() {
     description: "",
     logo: null,
   });
-
+ const navigate=useNavigate()
   const [preview, setPreview] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [generalError, setGeneralError] = useState("");

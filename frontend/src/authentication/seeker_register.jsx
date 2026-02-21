@@ -56,7 +56,7 @@ export default function Seeker_register() {
 
       localStorage.setItem("id", data.data.user.id);
       localStorage.setItem("email", data.data.user.email);
-      localStorage.setItem("role", data.data.user.role);
+
 
       navigate("/options");
     } catch (err) {
@@ -70,7 +70,7 @@ export default function Seeker_register() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 to-indigo-800 px-4">
       <div className="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md">
         <h2 className="text-3xl font-bold text-indigo-700 text-center mb-6">
-          Candidate Register
+           Register
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">

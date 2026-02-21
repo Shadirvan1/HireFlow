@@ -4,13 +4,31 @@ const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true,
+  withCredentials: true, 
 });
 
 
+async function refreshToken() {
+  try {
+    await axios.post(
+      `${BASE_URL}accounts/token/refresh/`,
+      {}, 
+      { withCredentials: true }
+    );
+
+    return true;
+  } catch (err) {
+    console.error("Refresh token failed:", err);
+    localStorage.clear()
+    window.location.href = "/login"; 
+    return false;
+  }
+}
+
+
 api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
 
     if (
@@ -20,14 +38,13 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      try {
-        await api.post("accounts/token/refresh/");
+      const refreshed = await refreshToken();
+      if (refreshed) {
+       
+        return api.request(originalRequest);
+      } else {
 
-        return api(originalRequest);
-
-      } catch (refreshError) {
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
       }
     }
 
