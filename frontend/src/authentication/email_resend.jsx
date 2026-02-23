@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/api";
+
 import { useNavigate } from "react-router-dom";
+import publicApi from "../api/publicapi";
 
 export default function EmailResend() {
   const [email, setEmail] = useState("");
@@ -29,7 +30,7 @@ export default function EmailResend() {
     setError("");
 
     try {
-      const response = await api.post("accounts/resend/link/", {
+      const response = await publicApi.post("accounts/resend/link/", {
         email: email,
       });
 

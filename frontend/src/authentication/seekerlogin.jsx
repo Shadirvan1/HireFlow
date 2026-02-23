@@ -2,42 +2,73 @@ import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import publicApi from "../api/publicapi";
 
-export default function SeekerLogin() {
+export default function Login() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    otp: "",
   });
-  
-  const [errors, setErrors] = useState({});
+
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [nonFieldErrors, setNonFieldErrors] = useState([]);
   const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: "" });
+    setFieldErrors({ ...fieldErrors, [e.target.name]: "" });
+    setNonFieldErrors([]);
     setGeneralError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrors({});
+    setFieldErrors({});
+    setNonFieldErrors([]);
     setGeneralError("");
 
     try {
       const response = await api.post("accounts/login/", formData);
 
-      localStorage.setItem("id", response.data.user.id);
-      localStorage.setItem("email", response.data.user.email);
-      localStorage.setItem("role", response.data.user.role);
+      if (response.data.mfa_required && !formData.otp) {
+        setMfaRequired(true);
+        setLoading(false);
+        return;
+      }
 
-      navigate("/candidate/dashboard");
+      const user = response.data.user;
+
+      localStorage.setItem("id", user.id);
+      localStorage.setItem("email", user.email);
+      localStorage.setItem("role", user.role);
+
+      redirectUser(user.role);
     } catch (error) {
       if (error.response?.data) {
-        setErrors(error.response.data);
+        const data = error.response.data;
+
+        const fieldErrorData = {};
+        Object.keys(data).forEach((key) => {
+          if (key !== "non_field_errors" && key !== "error") {
+            fieldErrorData[key] = data[key][0];
+          }
+        });
+
+        setFieldErrors(fieldErrorData);
+
+        if (data.non_field_errors) {
+          setNonFieldErrors(data.non_field_errors);
+        }
+
+        if (data.error) {
+          setGeneralError(data.error);
+        }
       } else {
         setGeneralError("Something went wrong. Please try again.");
       }
@@ -46,71 +77,68 @@ export default function SeekerLogin() {
     }
   };
 
+  const redirectUser = (role) => {
+    if (role === "HR") {
+      navigate("/hr/dashboard");
+    } else if (role === "ADMIN") {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/candidate/dashboard");
+    }
+  };
+
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
       const token = credentialResponse.credential;
-      const response = await api.post("accounts/auth/google/", { token });
 
-      localStorage.setItem("id", response.data.user.id);
-      localStorage.setItem("email", response.data.user.email);
-  
+      const response = await api.post("accounts/auth/google/", {
+        token,
+      });
 
-      navigate("/options");
+      const user = response.data.user;
+
+      localStorage.setItem("id", user.id);
+      localStorage.setItem("email", user.email);
+      localStorage.setItem("role", user.role);
+
+      redirectUser(user.role);
     } catch {
-      setGeneralError("Google login failed");
+      setGeneralError("Google login failed.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 relative px-4">
-
-
-      <div className="absolute top-6 right-6">
-        <button
-          onClick={() => navigate("/hr/login")}
-          className="bg-white/20 backdrop-blur-md text-white px-5 py-2 rounded-full border border-white/30 hover:bg-white/30 transition duration-300 shadow-md"
-        >
-          Login as HR →
-        </button>
-      </div>
-
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 px-4">
       <div className="bg-white/95 backdrop-blur-lg shadow-2xl rounded-3xl p-10 w-full max-w-md border border-white/30">
-
         <h2 className="text-3xl font-bold text-indigo-700 text-center mb-2">
-          Welcome Back 
+          Welcome Back
         </h2>
+
         <p className="text-center text-gray-500 mb-8 text-sm">
           Login to continue your job search journey
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-
-        
           <div>
             <input
-              type="text"
+              type="email"
               name="email"
-              placeholder="Email or Phone"
+              placeholder="Email"
               value={formData.email}
               onChange={handleChange}
               required
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition duration-200 ${
-                errors.email
-                  ? "border-red-500 focus:ring-red-400 bg-red-50"
-                  : "border-gray-300 focus:ring-indigo-500"
-              }`}
+              className="w-full px-4 py-3 border rounded-xl border-gray-300"
             />
-            {errors.email && (
+            {fieldErrors.email && (
               <p className="text-red-600 text-sm mt-1">
-                {errors.email[0]}
+                {fieldErrors.email}
               </p>
             )}
           </div>
 
-   
           <div>
             <input
               type="password"
@@ -119,89 +147,78 @@ export default function SeekerLogin() {
               value={formData.password}
               onChange={handleChange}
               required
-              className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition duration-200 ${
-                errors.password
-                  ? "border-red-500 focus:ring-red-400 bg-red-50"
-                  : "border-gray-300 focus:ring-indigo-500"
-              }`}
+              className="w-full px-4 py-3 border rounded-xl border-gray-300"
             />
-            {errors.password && (
+            {fieldErrors.password && (
               <p className="text-red-600 text-sm mt-1">
-                {errors.password[0]}
+                {fieldErrors.password}
               </p>
             )}
           </div>
 
+          {mfaRequired && (
+            <div>
+              <input
+                type="text"
+                name="otp"
+                placeholder="Enter 6-digit OTP"
+                value={formData.otp}
+                onChange={handleChange}
+                required
+                maxLength={6}
+                className="w-full px-4 py-3 border rounded-xl border-gray-300 text-center text-lg tracking-widest"
+              />
+              {fieldErrors.otp && (
+                <p className="text-red-600 text-sm mt-1">
+                  {fieldErrors.otp}
+                </p>
+              )}
+            </div>
+          )}
+
+          {nonFieldErrors.length > 0 && (
+            <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg">
+              {nonFieldErrors.map((err, index) => (
+                <p key={index}>{err}</p>
+              ))}
+            </div>
+          )}
+
           {generalError && (
-            <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg border border-red-300">
+            <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg">
               {generalError}
             </div>
           )}
 
-
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 rounded-xl font-semibold text-white transition duration-300 flex items-center justify-center ${
+            className={`w-full py-3 rounded-xl font-semibold text-white ${
               loading
                 ? "bg-indigo-400 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700 shadow-lg hover:shadow-xl"
+                : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
-            {loading ? (
-              <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              "Login"
-            )}
+            {loading ? "Please wait..." : "Login"}
           </button>
         </form>
 
-        <div className="flex items-center my-6">
-          <div className="flex-grow h-px bg-gray-300"></div>
-          <span className="px-3 text-gray-500 text-sm">OR</span>
-          <div className="flex-grow h-px bg-gray-300"></div>
-        </div>
+        {!mfaRequired && (
+          <>
+            <div className="flex items-center my-6">
+              <div className="flex-grow h-px bg-gray-300"></div>
+              <span className="px-3 text-gray-500 text-sm">OR</span>
+              <div className="flex-grow h-px bg-gray-300"></div>
+            </div>
 
-        <div className="flex justify-center">
-          {loading ? (
-            <div className="w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          ) : (
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setGeneralError("Google login failed")}
-            />
-          )}
-        </div>
-        <div className="text-center mt-8 space-y-2 text-sm">
-          <p className="text-gray-600">
-            Don't have an account?{" "}
-            <span
-              onClick={() => navigate("/register")}
-              className="text-indigo-600 font-medium cursor-pointer hover:underline"
-            >
-              Register
-            </span>
-          </p>
-
-          <p className="text-gray-600">
-            Account not verified?{" "}
-            <span
-              onClick={() => navigate("/resend/link")}
-              className="text-indigo-600 font-medium cursor-pointer hover:underline"
-            >
-              Verify now
-            </span>
-          </p>
-          <p className="text-gray-600">
-            Password {" "}
-            <span
-              onClick={() => navigate("/forgot/password")}
-              className="text-indigo-600 font-medium cursor-pointer hover:underline"
-            >
-              Forgot ? 
-            </span>
-          </p>
-        </div>
+            <div className="flex justify-center">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setGeneralError("Google login failed")}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

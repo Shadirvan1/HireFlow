@@ -12,9 +12,7 @@ export default function SetupMFA() {
       try {
         const res = await api.get("accounts/hr/setup-mfa/");
         setOtpUri(res.data.otp_uri);
-        setTimeout(() => {
-          navigate("/hr/dashboard")
-        }, 1000);
+
       } catch (err) {
         console.log(err.response?.data);
         setMessage(err.response?.data?.error || "Failed to load MFA setup");
@@ -30,6 +28,9 @@ export default function SetupMFA() {
         "accounts/hr/setup-mfa/",
         { otp }
       );
+              setTimeout(() => {
+          navigate("/hr/dashboard")
+        }, 1000);
       setMessage(res.data.message);
     } catch (err) {
       setMessage(err.response?.data?.error || "OTP verification failed");

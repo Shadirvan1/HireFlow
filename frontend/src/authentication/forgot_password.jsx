@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
+import publicApi from "../api/publicapi";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -15,7 +16,7 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const res = await api.post("accounts/forgot-password/", {
+      const res = await publicApi.post("accounts/forgot-password/", {
         email: email,
       });
 

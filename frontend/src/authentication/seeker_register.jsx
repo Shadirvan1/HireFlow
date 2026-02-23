@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
+import publicApi from "../api/publicapi";
 
 export default function Seeker_register() {
   const [formData, setFormData] = useState({
@@ -30,7 +31,7 @@ export default function Seeker_register() {
       setErrors({});
       setGeneralError("");
 
-      const data = await api.post("accounts/register/", formData);
+      const data = await publicApi.post("accounts/register/", formData);
 
       localStorage.setItem("id", data.data.user.id);
       localStorage.setItem("email", data.data.user.email);

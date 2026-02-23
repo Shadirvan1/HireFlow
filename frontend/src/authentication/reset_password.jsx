@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import api from "../api/api";
+import publicApi from "../api/publicapi";
 
 export default function ResetPassword() {
   const { uid, token } = useParams();
@@ -35,7 +36,7 @@ export default function ResetPassword() {
     }
 
     try {
-      const res = await api.post("accounts/reset-password/", {
+      const res = await publicApi.post("accounts/reset-password/", {
         uid,
         token,
         password,

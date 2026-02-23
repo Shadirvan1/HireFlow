@@ -368,3 +368,158 @@ class HRLoginSerializer(serializers.Serializer):
 
         attrs["user"] = user
         return attrs
+
+
+# serializers.py
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .models import Company, HRProfile
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+
+User = get_user_model()
+
+class HRRegisterSerializer(serializers.ModelSerializer):
+    # User fields
+    email = serializers.EmailField()
+    username = serializers.CharField(max_length=56)
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    # Company fields
+    company_name = serializers.CharField(max_length=255)
+    website = serializers.URLField(required=False, allow_blank=True)
+    industry = serializers.CharField(max_length=255)
+    company_size = serializers.CharField(max_length=100)
+    headquarters = serializers.CharField(max_length=255)
+
+    # HR fields
+    linkedin_url = serializers.URLField(required=False, allow_blank=True)
+    designation = serializers.CharField(required=False, allow_blank=True)
+    department = serializers.CharField(required=False, allow_blank=True)
+    experience_years = serializers.IntegerField(default=0)
+
+    class Meta:
+        model = User
+        fields = [
+            "email",
+            "username",
+            "password",
+            "company_name",
+            "website",
+            "industry",
+            "company_size",
+            "headquarters",
+            "linkedin_url",
+            "designation",
+            "department",
+            "experience_years",
+        ]
+
+    # ==============================
+    # 🔹 FIELD LEVEL VALIDATION
+    # ==============================
+
+    def validate_email(self, value):
+        value = value.lower().strip()
+
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already registered.")
+
+        return value
+
+    def validate_username(self, value):
+        if len(value.strip()) < 3:
+            raise serializers.ValidationError("Username must be at least 3 characters.")
+
+        return value.strip()
+
+
+
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.messages)
+        return value
+
+    def validate_experience_years(self, value):
+        if value < 0:
+            raise serializers.ValidationError("Experience cannot be negative.")
+        if value > 60:
+            raise serializers.ValidationError("Invalid experience value.")
+        return value
+
+    # ==============================
+    # 🔹 OBJECT LEVEL VALIDATION
+    # ==============================
+
+    def validate(self, attrs):
+
+        # Prevent duplicate company creation
+        company_name = attrs.get("company_name").strip()
+
+        if not company_name:
+            raise serializers.ValidationError({
+                "company_name": "Company name is required."
+            })
+
+        # Optional: prevent duplicate HR for same company + email domain logic
+        industry = attrs.get("industry")
+        if not industry:
+            raise serializers.ValidationError({
+                "industry": "Industry is required."
+            })
+
+        return attrs
+
+    # ==============================
+    # 🔹 CREATE METHOD (SAFE)
+    # ==============================
+
+    @transaction.atomic
+    def create(self, validated_data):
+
+        # Extract company data
+        company_data = {
+            "name": validated_data.pop("company_name").strip(),
+            "website": validated_data.pop("website", ""),
+            "industry": validated_data.pop("industry"),
+            "company_size": validated_data.pop("company_size"),
+            "headquarters": validated_data.pop("headquarters"),
+        }
+
+        # Extract HR data
+        hr_data = {
+            "linkedin_url": validated_data.pop("linkedin_url", ""),
+            "designation": validated_data.pop("designation", ""),
+            "department": validated_data.pop("department", ""),
+            "experience_years": validated_data.pop("experience_years", 0),
+        }
+
+        password = validated_data.pop("password")
+
+        # Create User
+        user = User.objects.create(
+            role="HR",
+            is_verified=False,
+            **validated_data
+        )
+        user.set_password(password)
+        user.save()
+
+        # Prevent duplicate company (production improvement)
+        company, created = Company.objects.get_or_create(
+            name=company_data["name"],
+            defaults=company_data
+        )
+
+        # Create HR Profile
+        HRProfile.objects.create(
+            user=user,
+            company=company,
+            role="ADMIN"
+            **hr_data
+        )
+
+        return user
