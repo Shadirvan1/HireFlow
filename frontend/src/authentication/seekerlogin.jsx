@@ -1,19 +1,19 @@
 import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import api from "../api/api";
 import { loginSuccess } from "../redux/userReducer";
-import {useDispatch} from "react-redux"
 
 export default function Login() {
   const navigate = useNavigate();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     otp: "",
   });
-
 
   const [mfaRequired, setMfaRequired] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -21,68 +21,110 @@ export default function Login() {
   const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // -------------------------
+  // Handle Input Change
+  // -------------------------
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    // Clear errors on change
     setFieldErrors({ ...fieldErrors, [e.target.name]: "" });
     setNonFieldErrors([]);
     setGeneralError("");
   };
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setFieldErrors({});
-  setNonFieldErrors([]);
-  setGeneralError("");
 
-  try {
-    const response = await api.post("accounts/login/", formData);
+  // -------------------------
+  // Handle Normal Login
+  // -------------------------
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return; // prevent double submit
 
-    if (response.data.mfa_required && !formData.otp) {
-      setMfaRequired(true);
+    setLoading(true);
+    setFieldErrors({});
+    setNonFieldErrors([]);
+    setGeneralError("");
+
+    try {
+      const { data } = await api.post("accounts/login/", formData);
+
+      // If MFA required
+      if (data.mfa_required && !formData.otp) {
+        setMfaRequired(true);
+        setLoading(false);
+        return;
+      }
+
+      const user = data.user;
+
+      dispatch(
+        loginSuccess({
+          user_id: user.id,
+          role: user.role,
+        })
+      );
+
+      redirectUser(user.role);
+
+    } catch (error) {
+      const data = error.response?.data;
+
+      if (data) {
+        const fieldErrorData = {};
+
+        Object.keys(data).forEach((key) => {
+          if (key !== "non_field_errors" && key !== "error") {
+            fieldErrorData[key] = data[key][0];
+          }
+        });
+
+        setFieldErrors(fieldErrorData);
+        setNonFieldErrors(data.non_field_errors || []);
+        setGeneralError(data.error || "");
+      } else {
+        setGeneralError("Something went wrong. Please try again.");
+      }
+    } finally {
       setLoading(false);
-      return;
     }
+  };
 
-    const user = response.data.user;
-    const access_token = response.data.access_token;
+  // -------------------------
+  // Handle Google Login
+  // -------------------------
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (loading) return;
+    setLoading(true);
+    setGeneralError("");
 
-    dispatch(
-      loginSuccess({
-        user_id: user.id,
-        role: user.role,
-        access_token: access_token,
-      })
-    );
+    try {
+      const token = credentialResponse.credential;
 
-    redirectUser(user.role);
-
-  } catch (error) {
-    if (error.response?.data) {
-      const data = error.response.data;
-
-      const fieldErrorData = {};
-      Object.keys(data).forEach((key) => {
-        if (key !== "non_field_errors" && key !== "error") {
-          fieldErrorData[key] = data[key][0];
-        }
+      const { data } = await api.post("accounts/auth/google/", {
+        token,
       });
 
-      setFieldErrors(fieldErrorData);
+      const user = data.user;
 
-      if (data.non_field_errors) {
-        setNonFieldErrors(data.non_field_errors);
-      }
+      dispatch(
+        loginSuccess({
+          user_id: user.id,
+          role: user.role,
+        })
+      );
 
-      if (data.error) {
-        setGeneralError(data.error);
-      }
-    } else {
-      setGeneralError("Something went wrong. Please try again.");
+      redirectUser(user.role);
+
+    } catch {
+      setGeneralError("Google login failed.");
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  // -------------------------
+  // Redirect Based On Role
+  // -------------------------
   const redirectUser = (role) => {
     if (role === "HR") {
       navigate("/hr/dashboard");
@@ -93,41 +135,24 @@ const handleSubmit = async (e) => {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setLoading(true);
-    try {
-      const token = credentialResponse.credential;
-
-      const response = await api.post("accounts/auth/google/", {
-        token,
-      });
-
-      const user = response.data.user;
-
-      localStorage.setItem("id", user.id);
-      localStorage.setItem("email", user.email);
-      localStorage.setItem("role", user.role);
-
-      redirectUser(user.role);
-    } catch {
-      setGeneralError("Google login failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // -------------------------
+  // UI
+  // -------------------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 px-4">
       <div className="bg-white/95 backdrop-blur-lg shadow-2xl rounded-3xl p-10 w-full max-w-md border border-white/30">
+        
         <h2 className="text-3xl font-bold text-indigo-700 text-center mb-2">
           Welcome Back
         </h2>
 
         <p className="text-center text-gray-500 mb-8 text-sm">
-          Login to continue your job search journey
+          Login to continue your journey
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+
+          {/* Email */}
           <div>
             <input
               type="email"
@@ -145,6 +170,7 @@ const handleSubmit = async (e) => {
             )}
           </div>
 
+          {/* Password */}
           <div>
             <input
               type="password"
@@ -162,6 +188,7 @@ const handleSubmit = async (e) => {
             )}
           </div>
 
+          {/* OTP */}
           {mfaRequired && (
             <div>
               <input
@@ -182,6 +209,7 @@ const handleSubmit = async (e) => {
             </div>
           )}
 
+          {/* Non Field Errors */}
           {nonFieldErrors.length > 0 && (
             <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg">
               {nonFieldErrors.map((err, index) => (
@@ -190,12 +218,14 @@ const handleSubmit = async (e) => {
             </div>
           )}
 
+          {/* General Error */}
           {generalError && (
             <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg">
               {generalError}
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -209,6 +239,7 @@ const handleSubmit = async (e) => {
           </button>
         </form>
 
+        {/* Google Login */}
         {!mfaRequired && (
           <>
             <div className="flex items-center my-6">
@@ -225,9 +256,28 @@ const handleSubmit = async (e) => {
             </div>
           </>
         )}
-         <p className="text-center text-sm text-gray-600 mt-6"> Don't have a account?{" "} <span onClick={()=>navigate("/register")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> Register </span> </p>
-          <p className="text-center text-sm text-gray-600 mt-6"> Account{" "} <span onClick={()=>navigate("/resend/link")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> verify </span> </p>
-       
+
+        {/* Links */}
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Don’t have an account?{" "}
+          <span
+            onClick={() => navigate("/register")}
+            className="text-indigo-600 font-medium cursor-pointer hover:underline"
+          >
+            Register
+          </span>
+        </p>
+
+        <p className="text-center text-sm text-gray-600 mt-2">
+          Verify Account?{" "}
+          <span
+            onClick={() => navigate("/resend/link")}
+            className="text-indigo-600 font-medium cursor-pointer hover:underline"
+          >
+            Click here
+          </span>
+        </p>
+
       </div>
     </div>
   );

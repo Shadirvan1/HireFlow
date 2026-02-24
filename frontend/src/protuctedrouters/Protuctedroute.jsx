@@ -1,10 +1,16 @@
-import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { Navigate } from "react-router-dom";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { role, isAuthenticated } = useSelector((state) => state.user);
+  const { role, authChecked } = useSelector((state) => state.user);
 
-  if (!isAuthenticated) {
+  // ⛔ Wait until auth check completes
+  if (!authChecked) {
+    return <div>Loading...</div>;
+  }
+
+  // ⛔ Only redirect AFTER auth is checked
+  if (!role) {
     return <Navigate to="/login" replace />;
   }
 

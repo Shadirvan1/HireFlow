@@ -1,69 +1,69 @@
 import axios from "axios";
 import { store } from "../redux/store";
-import { updateAccessToken, logout } from "../redux/userReducer";
+import { logout } from "../redux/userReducer";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, 
+  withCredentials: true,
 });
 
+// Prevent multiple refresh calls at the same time
+let isRefreshing = false;
+let failedQueue = [];
 
-api.interceptors.request.use(
-  (config) => {
-    const token = store.getState().user.access_token;
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// Process queued requests
+const processQueue = (error) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
     }
+  });
 
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-
+  failedQueue = [];
+};
 
 async function refreshToken() {
-  try {
-    const response = await axios.post(
-      `${BASE_URL}accounts/token/refresh/`,
-      {},
-      { withCredentials: true }
-    );
-
-    const newAccessToken = response.data.access_token;
-
-   
-    store.dispatch(updateAccessToken(newAccessToken));
-
-    return newAccessToken;
-  } catch (error) {
-    store.dispatch(logout());
-    window.location.href = "/login";
-    return null;
-  }
+  return axios.post(
+    `${BASE_URL}accounts/token/refresh/`,
+    {},
+    { withCredentials: true }
+  );
 }
-
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (
-      error.response &&
-      error.response.status === 401 &&
-      !originalRequest._retry
-    ) {
+    if (originalRequest.url.includes("token/refresh")) {
+      store.dispatch(logout());
+      return Promise.reject(error);
+    }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => api(originalRequest));
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
-      const newToken = await refreshToken();
-
-      if (newToken) {
-        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      try {
+        await refreshToken();
+        processQueue(null);
         return api(originalRequest);
+      } catch (err) {
+        processQueue(err);
+        store.dispatch(logout());
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
       }
     }
 

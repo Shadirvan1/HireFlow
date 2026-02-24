@@ -23,9 +23,9 @@ import HRRegister from "./authentication/hr_register";
 import HROutlet from "./hrpages/sidebar_outlet/outlet";
 import HRJobs from "./hrpages/jobs/jobs";
 import CreateJob from "./hrpages/jobs/createjob";
+
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_ID}>

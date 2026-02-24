@@ -252,13 +252,24 @@ class DisableMFAView(views.APIView):
         if disable_mfa(user, otp):
             return Response({"message": "MFA disabled successfully"}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid OTP or MFA not enabled"}, status=status.HTTP_400_BAD_REQUEST)
+class Me(views.APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request,version):
+        user = request.user
+
+        return Response({
+            "user_id": user.id,
+            "role": user.role,  
+        }, status=status.HTTP_200_OK)
+    
 
 class RefreshTokenView(views.APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, version):
         refresh_token = request.COOKIES.get("refresh_token")
+        print(refresh_token)
         if not refresh_token:
             return Response({"error": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED)
         try:
@@ -268,6 +279,7 @@ class RefreshTokenView(views.APIView):
             return response
         except TokenError:
             response = Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
+            response.delete_cookie("access_token")
             response.delete_cookie("refresh_token")
             return response
 

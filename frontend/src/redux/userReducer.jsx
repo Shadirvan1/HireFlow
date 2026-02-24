@@ -3,8 +3,8 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   user_id: null,
   role: null,
-  access_token: null,
   isAuthenticated: false,
+  authChecked: false,
 };
 
 const userSlice = createSlice({
@@ -12,53 +12,24 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
-      const { user_id, role, access_token } = action.payload;
+      const { user_id, role } = action.payload;
 
       state.user_id = user_id;
       state.role = role;
-      state.access_token = access_token;
       state.isAuthenticated = true;
-
-      localStorage.setItem("auth", JSON.stringify(action.payload));
     },
 
     logout: (state) => {
-      state.user_id = null;
-      state.role = null;
-      state.access_token = null;
-      state.isAuthenticated = false;
-
-      localStorage.clear();
+      return initialState;
     },
 
-    loadUserFromStorage: (state) => {
-      const data = localStorage.getItem("auth");
-      if (data) {
-        const parsed = JSON.parse(data);
-        state.user_id = parsed.user_id;
-        state.role = parsed.role;
-        state.access_token = parsed.access_token;
-        state.isAuthenticated = true;
-      }
-    },
-
-    updateAccessToken: (state, action) => {
-      state.access_token = action.payload;
-
-      const stored = JSON.parse(localStorage.getItem("auth"));
-      if (stored) {
-        stored.access_token = action.payload;
-        localStorage.setItem("auth", JSON.stringify(stored));
-      }
+    authCheckComplete: (state) => {
+      state.authChecked = true;
     },
   },
 });
 
-export const {
-  loginSuccess,
-  logout,
-  loadUserFromStorage,
-  updateAccessToken, 
-} = userSlice.actions;
+export const { loginSuccess, logout, authCheckComplete } =
+  userSlice.actions;
 
 export default userSlice.reducer;
