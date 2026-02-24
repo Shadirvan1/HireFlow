@@ -2,16 +2,18 @@ import React, { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
-import publicApi from "../api/publicapi";
+import { loginSuccess } from "../redux/userReducer";
+import {useDispatch} from "react-redux"
 
 export default function Login() {
   const navigate = useNavigate();
-
+  const dispatch = useDispatch()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     otp: "",
   });
+
 
   const [mfaRequired, setMfaRequired] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -25,58 +27,62 @@ export default function Login() {
     setNonFieldErrors([]);
     setGeneralError("");
   };
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setFieldErrors({});
+  setNonFieldErrors([]);
+  setGeneralError("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setFieldErrors({});
-    setNonFieldErrors([]);
-    setGeneralError("");
+  try {
+    const response = await api.post("accounts/login/", formData);
 
-    try {
-      const response = await api.post("accounts/login/", formData);
-
-      if (response.data.mfa_required && !formData.otp) {
-        setMfaRequired(true);
-        setLoading(false);
-        return;
-      }
-
-      const user = response.data.user;
-
-      localStorage.setItem("id", user.id);
-      localStorage.setItem("email", user.email);
-      localStorage.setItem("role", user.role);
-
-      redirectUser(user.role);
-    } catch (error) {
-      if (error.response?.data) {
-        const data = error.response.data;
-
-        const fieldErrorData = {};
-        Object.keys(data).forEach((key) => {
-          if (key !== "non_field_errors" && key !== "error") {
-            fieldErrorData[key] = data[key][0];
-          }
-        });
-
-        setFieldErrors(fieldErrorData);
-
-        if (data.non_field_errors) {
-          setNonFieldErrors(data.non_field_errors);
-        }
-
-        if (data.error) {
-          setGeneralError(data.error);
-        }
-      } else {
-        setGeneralError("Something went wrong. Please try again.");
-      }
-    } finally {
+    if (response.data.mfa_required && !formData.otp) {
+      setMfaRequired(true);
       setLoading(false);
+      return;
     }
-  };
 
+    const user = response.data.user;
+    const access_token = response.data.access_token;
+
+    dispatch(
+      loginSuccess({
+        user_id: user.id,
+        role: user.role,
+        access_token: access_token,
+      })
+    );
+
+    redirectUser(user.role);
+
+  } catch (error) {
+    if (error.response?.data) {
+      const data = error.response.data;
+
+      const fieldErrorData = {};
+      Object.keys(data).forEach((key) => {
+        if (key !== "non_field_errors" && key !== "error") {
+          fieldErrorData[key] = data[key][0];
+        }
+      });
+
+      setFieldErrors(fieldErrorData);
+
+      if (data.non_field_errors) {
+        setNonFieldErrors(data.non_field_errors);
+      }
+
+      if (data.error) {
+        setGeneralError(data.error);
+      }
+    } else {
+      setGeneralError("Something went wrong. Please try again.");
+    }
+  } finally {
+    setLoading(false);
+  }
+};
   const redirectUser = (role) => {
     if (role === "HR") {
       navigate("/hr/dashboard");
@@ -219,6 +225,9 @@ export default function Login() {
             </div>
           </>
         )}
+         <p className="text-center text-sm text-gray-600 mt-6"> Don't have a account?{" "} <span onClick={()=>navigate("/register")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> Register </span> </p>
+          <p className="text-center text-sm text-gray-600 mt-6"> Account{" "} <span onClick={()=>navigate("/resend/link")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> verify </span> </p>
+       
       </div>
     </div>
   );

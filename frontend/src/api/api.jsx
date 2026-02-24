@@ -1,4 +1,6 @@
 import axios from "axios";
+import { store } from "../redux/store";
+import { updateAccessToken, logout } from "../redux/userReducer";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL;
 
@@ -8,27 +10,46 @@ const api = axios.create({
 });
 
 
+api.interceptors.request.use(
+  (config) => {
+    const token = store.getState().user.access_token;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+
+
 async function refreshToken() {
   try {
-    await axios.post(
+    const response = await axios.post(
       `${BASE_URL}accounts/token/refresh/`,
-      {}, 
+      {},
       { withCredentials: true }
     );
 
-    return true;
-  } catch (err) {
-    console.error("Refresh token failed:", err);
-    localStorage.clear()
-    window.location.href = "/login"; 
-    return false;
+    const newAccessToken = response.data.access_token;
+
+   
+    store.dispatch(updateAccessToken(newAccessToken));
+
+    return newAccessToken;
+  } catch (error) {
+    store.dispatch(logout());
+    window.location.href = "/login";
+    return null;
   }
 }
 
 
 api.interceptors.response.use(
-  response => response,
-  async error => {
+  (response) => response,
+  async (error) => {
     const originalRequest = error.config;
 
     if (
@@ -38,13 +59,11 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const refreshed = await refreshToken();
-      if (refreshed) {
-       
-        return api.request(originalRequest);
-      } else {
+      const newToken = await refreshToken();
 
-        return Promise.reject(error);
+      if (newToken) {
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        return api(originalRequest);
       }
     }
 

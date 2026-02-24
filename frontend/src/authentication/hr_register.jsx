@@ -290,6 +290,9 @@ function HRRegister() {
           </button>
 
         </form>
+        <p className="text-center text-sm text-gray-600 mt-6"> Already have a account?{" "} <span onClick={()=>navigate("/login")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> Login </span> </p>
+        <p className="text-center text-sm text-gray-600 mt-6"> Your a candidate?{" "} <span onClick={()=>navigate("/register")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> register </span> </p>
+        <p className="text-center text-sm text-gray-600 mt-6"> Account{" "} <span onClick={()=>navigate("/resend/link")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> verify </span> </p>
       </div>
     </div>
   );

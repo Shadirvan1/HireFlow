@@ -30,13 +30,7 @@ def set_tokens_in_response(response, tokens):
     """
     Set access and refresh tokens in HttpOnly cookies.
     """
-    response.set_cookie(
-        key="access_token",
-        value=tokens["access"],
-        httponly=True,
-        secure=False,   
-        samesite="Lax"
-    )
+    response.data['access_token'] = tokens['access']
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh"],

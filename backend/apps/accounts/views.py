@@ -213,7 +213,7 @@ class LoginView(views.APIView):
                 "user": {
                     "id": user.id,
                     "email": user.email,
-                    "role": user.role
+                    "role": user.role,
                 }
             },
             status=status.HTTP_200_OK
@@ -227,7 +227,7 @@ class SetupMFAView(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, version):
-        print(request.COOKIES)
+
         user = request.user
         if user.mfa_enabled:
             return Response({"message": "MFA already enabled", 'mfa_enabled': user.mfa_enabled}, status=status.HTTP_200_OK)
@@ -259,7 +259,6 @@ class RefreshTokenView(views.APIView):
 
     def post(self, request, version):
         refresh_token = request.COOKIES.get("refresh_token")
-        print(refresh_token)
         if not refresh_token:
             return Response({"error": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED)
         try:
@@ -269,7 +268,6 @@ class RefreshTokenView(views.APIView):
             return response
         except TokenError:
             response = Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
-            response.delete_cookie("access_token")
             response.delete_cookie("refresh_token")
             return response
 
@@ -286,7 +284,6 @@ class LogoutView(views.APIView):
                 token.blacklist()
             except TokenError:
                 pass
-        response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
         return response
 

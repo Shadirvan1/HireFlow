@@ -162,6 +162,7 @@ export default function Seeker_register() {
         </div>
         <p className="text-center text-sm text-gray-600 mt-6"> Already have an account? {" "} <span onClick={()=>navigate("/login")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> Login </span> </p>
         <p className="text-center text-sm text-gray-600 mt-6"> Account{" "} <span onClick={()=>navigate("/resend/link")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> verify </span> </p>
+        <p className="text-center text-sm text-gray-600 mt-6"> Your a hr?{" "} <span onClick={()=>navigate("/hr/register")} className="text-indigo-600 font-medium cursor-pointer hover:underline"> register </span> </p>
       </div>
     </div>
   );
