@@ -33,42 +33,13 @@ export default function HrDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await api.post("/accounts/logout/");
-      localStorage.clear();
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
 
 
-      <aside className="w-64 bg-indigo-700 text-white p-6 hidden md:block">
-        <h2 className="text-2xl font-bold mb-8">HireFlow HR</h2>
-
-        <nav className="space-y-4">
-          <button className="block w-full text-left hover:bg-indigo-600 p-2 rounded">
-            Dashboard
-          </button>
-          <button className="block w-full text-left hover:bg-indigo-600 p-2 rounded">
-            Candidates
-          </button>
-          <button className="block w-full text-left hover:bg-indigo-600 p-2 rounded">
-            Settings
-          </button>
-        </nav>
-
-        <button
-          onClick={handleLogout}
-          className="mt-10 w-full bg-red-500 hover:bg-red-600 transition py-2 rounded"
-        >
-          Logout
-        </button>
-      </aside>
+    
 
       <div className="flex-1 p-8">
 

@@ -265,10 +265,10 @@ class HRProfileSerializer(serializers.ModelSerializer):
              'linkedin_url', 'designation', 'department', 'role',
             'hires_count', 'experience_years', 'receive_notifications',
             'profile_image', 'certifications',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at',"is_active"
         ]
         read_only_fields = [
-            'id', 'hires_count', 'created_at',
+            'id', 'hires_count', 'created_at',"isactive",
             'updated_at', 'user', 'company', 'role'
         ]
 
@@ -508,18 +508,24 @@ class HRRegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
 
-        # Prevent duplicate company (production improvement)
+      
         company, created = Company.objects.get_or_create(
             name=company_data["name"],
             defaults=company_data
         )
 
-        # Create HR Profile
         HRProfile.objects.create(
             user=user,
             company=company,
-            role="ADMIN"
+            role="HR",
             **hr_data
         )
 
         return user
+
+from .models import Invite
+
+class InviteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invite
+        fields = ["email", "role", "company", "expires_at"]

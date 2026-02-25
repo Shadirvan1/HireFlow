@@ -16,6 +16,10 @@ urlpatterns = [
     path("forgot-password/", views.ForgotPasswordView.as_view()),
     path("reset-password/", views.ResetPasswordView.as_view()),
     path("me/", views.Me.as_view()),
+    path("hr/invite/", views.InviteUserView.as_view()),
+    path("invite/<str:role>/", views.InviteUserView.as_view()),
+    path("hr/register/<token>/", views.RegisterViaInviteView.as_view()),
+
     
     
 ]

@@ -23,6 +23,9 @@ import HRRegister from "./authentication/hr_register";
 import HROutlet from "./hrpages/sidebar_outlet/outlet";
 import HRJobs from "./hrpages/jobs/jobs";
 import CreateJob from "./hrpages/jobs/createjob";
+import InviteManagement from "./hrpages/invitation/invite";
+import InvitationRegister from "./hrpages/invitation/inviteregister";
+import SecuritySettings from "./hrpages/security/menus";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -39,6 +42,8 @@ function App() {
            <Route path="/verify-email/:uidb64/:token" element={<Login_protector><VerifyEmailPage /></Login_protector>} />
           <Route path="/forgot/password" element={<Login_protector><ForgotPassword /></Login_protector>} />
           <Route path="/reset-password/:uid/:token" element={<Login_protector><ResetPassword /></Login_protector>} />
+          <Route path="/register/:token" element={<Login_protector><InvitationRegister /></Login_protector>} />
+          
 
           <Route path="/hr/setup-mfa" element={<SetupMFA />} />
           <Route path="/hr/disable-mfa" element={<DisableMFA />} />
@@ -54,6 +59,8 @@ function App() {
           <Route path="dashboard" element={<HrDashboard />} />
           <Route path="jobs" element={<HRJobs />} />
           <Route path="create-job" element={<CreateJob />} />
+          <Route path="all-users" element={<InviteManagement />} />
+          <Route path="security" element={<SecuritySettings />} />
           </Route>
           
           

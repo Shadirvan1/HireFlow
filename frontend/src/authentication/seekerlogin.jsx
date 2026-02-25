@@ -48,7 +48,7 @@ export default function Login() {
     try {
       const { data } = await api.post("accounts/login/", formData);
 
-      // If MFA required
+
       if (data.mfa_required && !formData.otp) {
         setMfaRequired(true);
         setLoading(false);

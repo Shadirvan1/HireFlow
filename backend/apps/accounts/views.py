@@ -98,7 +98,7 @@ class HRRegisterView(views.APIView):
                 "message": "Registration successful. Please login.",
                 "user": {"id": str(user.id), "email": user.email}
             },
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_200_OK
         )
 
 
@@ -330,3 +330,81 @@ class ResetPasswordView(views.APIView):
         user.set_password(password)
         user.save()
         return Response({"message": "Password reset successful"})
+    
+from datetime import timedelta
+from .models import Invite,Company
+from datetime import timedelta
+from django.utils import timezone
+import os
+FRONT_END_URL = os.getenv("FRONT_END_URL")
+class InviteUserView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, version, role):
+
+        role = role.upper()
+
+        if role not in ["HR", "INTERVIEWER"]:
+            return Response({"error": "Invalid role"}, status=400)
+
+       
+        try:
+            company = request.user.hr_profile.company
+        except:
+            return Response({"error": "No company attached"}, status=400)
+
+        invite = Invite.objects.create(
+            company=company,
+            role=role,
+            expires_at=timezone.now() + timedelta(days=3)
+        )
+
+        invite_link = f"{FRONT_END_URL}/register/{invite.token}"
+
+        return Response({
+            "invite_link": invite_link,
+            "role": role
+        }, status=201)
+class RegisterViaInviteView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, version, token):
+
+        username = request.data.get("username")
+        email = request.data.get("email")
+        password = request.data.get("password")
+
+        invite = Invite.objects.filter(
+            token=token,
+            is_used=False,
+            expires_at__gte=timezone.now()
+        ).first()
+
+        if not invite:
+            return Response({"error": "Invalid or expired invite"}, status=400)
+       
+        user = User.objects.create_user(
+        email=email,
+        password=password,
+        username=username,
+        role="HR" if invite.role == "HR" else 'INTERVIEWER',
+        is_hr = True,
+        is_verified = True,
+
+        )
+
+        
+        HRProfile.objects.create(
+            user=user,
+            company=invite.company,
+            role="HR" if invite.role == "HR" else "INTERVIEWER"
+        )
+
+        invite.is_used = True
+        invite.save()
+
+        return Response({
+            "message": "Registration successful",
+            "company": invite.company.name,
+            "role": invite.role
+        }, status=201)

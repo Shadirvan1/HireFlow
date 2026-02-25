@@ -22,7 +22,7 @@ const VerifyEmailPage = () => {
         if (data.message) {
           setStatus(data.message);
 
-          setTimeout(() => navigate('/options'), 3000);
+          setTimeout(() => navigate('/login'), 3000);
         } else if (data.error) {
           setStatus(data.error);
         } else {

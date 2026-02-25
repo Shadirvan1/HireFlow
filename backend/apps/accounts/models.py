@@ -95,13 +95,12 @@ class Company(models.Model):
     industry = models.CharField(max_length=255)
     company_size = models.CharField(max_length=100)
     headquarters = models.CharField(max_length=255)
-
-
     logo = models.ImageField(upload_to=company_logo_upload, null=True, blank=True)
 
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 class HRProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hr_profile",blank=True,null=True)
@@ -109,14 +108,13 @@ class HRProfile(models.Model):
     linkedin_url = models.URLField(blank=True, null=True)
     designation = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=50, blank=True, null=True)
-    ROLE_CHOICES = [('recruiter', 'Recruiter'), ('manager', 'HR Manager'), ('admin', 'Admin')]
+    ROLE_CHOICES = [('INTERVIEWER', 'INTERVIEWER'), ('HR', 'HR')]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='admin')
     profile_image = models.ImageField(upload_to=hr_profile_image_upload, blank=True, null=True)
     certifications = models.FileField(upload_to=hr_certification_upload, blank=True, null=True)
- 
+    is_active = models.BooleanField(default=True)
     hires_count = models.PositiveIntegerField(default=0)
     experience_years = models.PositiveIntegerField(default=0)
-    
     receive_notifications = models.BooleanField(default=True)    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -159,3 +157,24 @@ class CandidateProfile(models.Model):
 
 
 
+
+class Invite(models.Model):
+
+    ROLE_CHOICES = (
+        ("admin", "Admin"),
+        ("recruiter", "Recruiter"),
+    )
+
+    email = models.EmailField()
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_used = models.BooleanField(default=False)
+
+    expires_at = models.DateTimeField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.email} - {self.role}"

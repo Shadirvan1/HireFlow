@@ -65,7 +65,7 @@ export default function HRJobs() {
       <div className="flex justify-between items-center mb-16">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-            Job Dashboard
+            Jobs
           </h1>
           <p className="text-gray-500 mt-3 text-sm">
             Manage and control your company job postings

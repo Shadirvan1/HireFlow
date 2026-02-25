@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "apps.accounts",
     "apps.jobs",
+    "apps.management",
     "admin_apps.hr_manage",
     "rest_framework",
     "drf_spectacular",

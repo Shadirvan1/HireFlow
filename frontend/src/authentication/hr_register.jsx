@@ -98,9 +98,7 @@ function HRRegister() {
         <h2 className="text-3xl font-bold text-center mb-8 text-gray-800">
           HR Registration
         </h2>
-
-        {/* 🔴 Global Error */}
-        {nonFieldError && (
+  {nonFieldError && (
           <div className="bg-red-100 text-red-700 p-3 rounded-lg mb-6 text-sm">
             {nonFieldError}
           </div>
@@ -108,7 +106,7 @@ function HRRegister() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
 
-          {/* USER SECTION */}
+          
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-700">
               User Information

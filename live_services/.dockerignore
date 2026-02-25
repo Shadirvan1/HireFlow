@@ -1,0 +1,35 @@
+# Git
+.git
+.gitignore
+
+# Python caches and artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache
+.coverage
+htmlcov/
+
+# Local Virtual Environments
+env/
+venv/
+.env/
+
+# Environment secrets (Docker-compose will inject these)
+.env
+
+# Media and Static files (Should be handled by Nginx/Minio)
+media/
+staticfiles/
+
+# Logs
+*.log
+
+# Databases (in case you have local sqlite files)
+*.sqlite3
+db.sqlite3
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
