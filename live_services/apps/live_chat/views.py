@@ -33,3 +33,22 @@ class ChatHistoryView(APIView):
         print(serializer.data)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+from django.core.cache import cache
+
+class OnlineStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_ids = request.query_params.get("ids")
+
+        if not user_ids:
+            return Response({})
+
+        ids_list = user_ids.split(",")
+
+        status = {}
+        for uid in ids_list:
+            status[uid] = bool(cache.get(f"user_online_{uid}"))
+
+        return Response(status)

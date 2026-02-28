@@ -79,11 +79,7 @@ REST_FRAMEWORK = {
     ),
 }
 
-import firebase_admin
-from firebase_admin import credentials
 
-cred = credentials.Certificate("config/serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
 
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")

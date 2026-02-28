@@ -1,8 +1,10 @@
-version: '3.9'
+version: "3.9"
 
 services:
 
-  # 1. MAIN DATABASE
+  # -----------------------------
+  # 1️⃣ MAIN DATABASE
+  # -----------------------------
   db:
     image: postgres:15
     container_name: postgres_db
@@ -16,7 +18,9 @@ services:
     ports:
       - "5432:5432"
 
-  # 2. LIVE CHAT DATABASE  
+  # -----------------------------
+  # 2️⃣ LIVE CHAT DATABASE
+  # -----------------------------
   live_chat_db:
     image: postgres:15
     container_name: live_chat_db
@@ -30,7 +34,9 @@ services:
     ports:
       - "5433:5432"
 
-  # 3. REDIS
+  # -----------------------------
+  # 3️⃣ REDIS (Broker + Channels)
+  # -----------------------------
   redis:
     image: redis:7-alpine
     container_name: redis_broker
@@ -38,7 +44,9 @@ services:
     ports:
       - "6379:6379"
 
-  # 4. OBJECT STORAGE
+  # -----------------------------
+  # 4️⃣ MINIO (Object Storage)
+  # -----------------------------
   minio:
     image: quay.io/minio/minio
     container_name: minio
@@ -53,7 +61,9 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  # 5. MAIN BACKEND (HTTP)
+  # -----------------------------
+  # 5️⃣ MAIN BACKEND (HTTP API)
+  # -----------------------------
   backend:
     container_name: django_backend
     restart: always
@@ -71,7 +81,9 @@ services:
     env_file:
       - ./backend/.env
 
-  # 6. LIVE CHAT SERVICE (WebSockets)
+  # -----------------------------
+  # 6️⃣ LIVE CHAT SERVICE (WebSocket)
+  # -----------------------------
   live_chat:
     container_name: django_live_chat
     restart: always
@@ -86,6 +98,24 @@ services:
     depends_on:
       - live_chat_db
       - redis
+    env_file:
+      - ./live_services/.env
+
+  # -----------------------------
+  # 7️⃣ CELERY WORKER (Live Chat)
+  # -----------------------------
+  celery_worker:
+    container_name: live_chat_celery
+    restart: always
+    build:
+      context: ./live_services
+      dockerfile: Dockerfile
+    command: celery -A live_service_main worker --loglevel=info
+    volumes:
+      - ./live_services:/app
+    depends_on:
+      - redis
+      - live_chat_db
     env_file:
       - ./live_services/.env
 
