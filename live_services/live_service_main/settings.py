@@ -28,9 +28,13 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-CORS_ALLOWED_ORIGINS = ["http://localhost:8000", "http://127.0.0.1:8000"]
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+]
+CSRF_TRUSTED_ORIGINS = ["http://127.0.0.1:5173"]
+CORS_ALLOW_CREDENTIALS = True
 
-# Application definition
 
 INSTALLED_APPS = [
     "daphne",
@@ -41,13 +45,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "channels",
-    "accounts",
-
+    "apps.live_chat",
+    "corsheaders",
+    "rest_framework",
 ]
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -61,9 +68,15 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "hosts": [os.environ.get('REDIS_URL', 'redis://redis:6379/1')],
         },
     },
+}
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "live_service_main.middleware.JWTAuthentication",
+    ],
 }
 
 SIMPLE_JWT = {
@@ -72,6 +85,9 @@ SIMPLE_JWT = {
 }
 
 ROOT_URLCONF = 'live_service_main.urls'
+
+
+
 
 TEMPLATES = [
     {
@@ -96,19 +112,15 @@ TEMPLATES = [
 
 
 DATABASES = {
-    "default": {
-        
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST","localhost"),
-        "PORT": os.getenv("DB_PORT"),
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get("DB_NAME"),
+        'USER': os.environ.get("DB_USER"),
+        'PASSWORD': os.environ.get("DB_PASSWORD"),
+        'HOST': os.environ.get("DB_HOST"),
+        'PORT': os.environ.get("DB_PORT"),
     }
 }
-
-AUTH_USER_MODEL = 'accounts.User'
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

@@ -8,10 +8,9 @@ export default function CandidateDashboard() {
   const handleLogout = async () => {
     try {
       await api.post(
-        "/accounts/logout/",
+        "accounts/logout/",
       );
 
-      localStorage.clear();
 
     
       navigate("/login");

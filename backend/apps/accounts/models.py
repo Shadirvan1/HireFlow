@@ -158,6 +158,18 @@ class CandidateProfile(models.Model):
 
 
 
+from django.utils import timezone
+import datetime
+
+class PhoneOTP(models.Model):
+    phone_number = models.CharField(max_length=15)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        return self.created_at >= timezone.now() - datetime.timedelta(minutes=5)
+
+
 class Invite(models.Model):
 
     ROLE_CHOICES = (

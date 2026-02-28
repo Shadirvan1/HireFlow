@@ -16,8 +16,9 @@ class SeekerSerializer(serializers.ModelSerializer):
             "password",
             "email",
             "phone_number",
+            "is_number_verified",
         ]
-
+        read_only_fields =["is_number_verified"]
 
         def validate_username(self, value):
             if User.objects.filter(username=value).exists():
@@ -61,16 +62,17 @@ class SeekerSerializer(serializers.ModelSerializer):
         return user
 
 
-
+from datetime import date
 
 class CandidateProfileSerializer(serializers.ModelSerializer):
-
+    user=SeekerSerializer(read_only=True)
     profile_image = serializers.ImageField(required=False)
 
     class Meta:
         model = CandidateProfile
         fields = [
             "id",
+            "user",
             "first_name",
             "last_name",
             "date_of_birth",
@@ -122,9 +124,10 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
 
         dob = data.get("date_of_birth")
         if dob:
-            if dob > date.today():
+            age = (date.today() - dob).days // 365
+            if age < 18:
                 raise serializers.ValidationError({
-                    "date_of_birth": "Date of birth cannot be in future."
+                    "date_of_birth": "You must be at least 18 years old to register."
                 })
 
         return data
@@ -159,6 +162,10 @@ class SeekerLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError({
                     "email": "Please verify your account first"
                 })
+            if not user.is_active:
+                raise serializers.ValidationError({
+                    "email":"Please contact admin"
+                })
 
         if not user.is_active:
             raise serializers.ValidationError({
@@ -175,11 +182,13 @@ class Hrserializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
+                "id",
                 "username",
                 "password",
                 "email",
                 "hr_password",
             ]
+        read_only_fields = ["id"]
         def validate_username(self,value):
             if User.objects.filter(username=value).exists():
                 raise serializers.ValidationError("Username already exists")
@@ -211,6 +220,7 @@ class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
         fields = [
+            "id",
             "email",
             'name',
             'website',
@@ -221,6 +231,7 @@ class CompanySerializer(serializers.ModelSerializer):
             'description',
             
         ]
+        read_only_fields = ['id']
 
 
 

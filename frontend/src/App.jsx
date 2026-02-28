@@ -15,7 +15,7 @@ import Sidebar from "./adminpages/sidebar";
 import HR_details from "./adminpages/hr_details";
 import SetupMFA from "./authentication/enable_mfa";
 import DisableMFA from "./authentication/disable-mfa";
-import CandidateProfile from "./profiles/candidate";
+import CandidateProfile from "./candidatepages/profile/candidate";
 import CandidateDashboard from "./candidatepages/dashboard";
 import ForgotPassword from "./authentication/forgot_password";
 import ResetPassword from "./authentication/reset_password";
@@ -26,6 +26,12 @@ import CreateJob from "./hrpages/jobs/createjob";
 import InviteManagement from "./hrpages/invitation/invite";
 import InvitationRegister from "./hrpages/invitation/inviteregister";
 import SecuritySettings from "./hrpages/security/menus";
+import CandidateOutlet from "./candidatepages/navbar_outlet/outlet";
+import CandidateProfileView from "./candidatepages/profile/profile";
+import FindJobs from "./candidatepages/jobs/findjobs";
+import HRApplications from "./hrpages/jobs/applications";
+import ApplyJob from "./candidatepages/jobs/applyjobs";
+import ChatPage from "./hrpages/chat/mainchatpage";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -49,9 +55,14 @@ function App() {
           <Route path="/hr/disable-mfa" element={<DisableMFA />} />
 
           {/* ---- candidate pages ---- */}
-
-          <Route path="/candidate/dashboard" element={<ProtectedRoute allowedRoles={['CANDIDATE']}><CandidateDashboard /></ProtectedRoute>} />
-          <Route path="/candidate/profile" element={<ProtectedRoute allowedRoles={['CANDIDATE']}><CandidateProfile /></ProtectedRoute>} />
+          <Route path="/candidate" element={<ProtectedRoute allowedRoles={['CANDIDATE']}>< CandidateOutlet /></ProtectedRoute>}>
+          <Route path="dashboard" element={<CandidateDashboard />} />
+          <Route path="profile" element={<CandidateProfileView />} />
+          <Route path="profile/edit" element={<CandidateProfile />} />
+          <Route path="jobs" element={<FindJobs />} />
+          <Route path="application/:jobId" element={<ApplyJob />} />
+          </Route>
+          
 
           {/* ---- hr pages ---- */}
           
@@ -61,6 +72,8 @@ function App() {
           <Route path="create-job" element={<CreateJob />} />
           <Route path="all-users" element={<InviteManagement />} />
           <Route path="security" element={<SecuritySettings />} />
+          <Route path="applications" element={<HRApplications />} />
+          <Route path="chat" element={<ChatPage />} />
           </Route>
           
           

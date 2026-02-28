@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 User = get_user_model()
 
 class AllCompanyEmployeesView(views.APIView):
-    permission_classes = [IsAuthenticated]
+    
 
     def get(self, request, version):
         try:
@@ -17,7 +17,7 @@ class AllCompanyEmployeesView(views.APIView):
         except HRProfile.DoesNotExist:
             return Response({"error": "HR profile not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        employees = HRProfile.objects.filter(company=hr_profile.company)
+        employees = HRProfile.objects.filter(company=hr_profile.company).exclude(user=request.user)
 
         serializer = HRProfileSerializer(employees, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -77,3 +77,15 @@ class ToggleEmployeeRoleView(views.APIView):
         toggled_user.save()
 
         return Response({"success": "Role updated successfully","role":role.upper()}, status=status.HTTP_200_OK)
+    
+from apps.accounts.models import CandidateProfile
+from apps.accounts.serializers import CandidateProfileSerializer
+class GetCandidateView(views.APIView):
+    def get(self,request,version):
+        try:
+            candidate = CandidateProfile.objects.get(user=request.user)
+        except CandidateProfile.DoesNotExist:
+            return Response({"error":"User is guest"},status=status.HTTP_400_BAD_REQUEST)
+        serializer = CandidateProfileSerializer(candidate)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+    

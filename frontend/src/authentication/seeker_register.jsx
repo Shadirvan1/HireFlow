@@ -37,7 +37,7 @@ export default function Seeker_register() {
       localStorage.setItem("email", data.data.user.email);
       localStorage.setItem("role", data.data.user.role);
       alert("Verification link sent to your email address")
-      navigate("/options");
+      navigate("/login");
     } catch (error) {
       if (error.response?.data) {
         setErrors(error.response.data);
@@ -59,7 +59,7 @@ export default function Seeker_register() {
       localStorage.setItem("email", data.data.user.email);
 
 
-      navigate("/options");
+      navigate("/login");
     } catch (err) {
       alert("Google login failed");
     } finally {

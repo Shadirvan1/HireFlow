@@ -4,5 +4,6 @@ urlpatterns = [
     path("get/all/employees/",views.AllCompanyEmployeesView.as_view()),
     path("user/<int:id>/toggle-activity/",views.ToggleEmployeesView.as_view()),
     path("user/<int:id>/change/role/",views.ToggleEmployeeRoleView.as_view()),
+    path("candidate/profile/",views.GetCandidateView.as_view()),
     
 ]

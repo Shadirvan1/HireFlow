@@ -39,8 +39,59 @@ class CompanyActivityView(APIView):
         job.delete()
         return Response({"message":"Delete job"},status=status.HTTP_200_OK)
 
+class GetAllJobsView(APIView):
+    def get(self,request,version):
+        jobs = Job.objects.filter(is_approve = True,is_active = True)
+        serializer = JobSerializer(jobs,many=True)
+        return Response(serializer.data,status=status.HTTP_200_OK)
 
+from apps.accounts.models import Company
+from .serializers import JobApplySerializer
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from apps.accounts.models import CandidateProfile
+
+class GetJobByIdview(APIView):
+    def get(self, request, version, id=None):
+        try:
+            job = Job.objects.get(id=id)
+        except Job.DoesNotExist:
+            return Response({"error": "Job not available"}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        try:
+            candidate_profile = CandidateProfile.objects.get(user=user)
+        except CandidateProfile.DoesNotExist:
+            return Response({"error":"user is not logged in"},status=status.HTTP_404_NOT_FOUND)
+
+        context_data = {
+            'job': job,
+            'candidate': candidate_profile
+        }
+
+        serializer = JobApplySerializer(context_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+from .serializers import JobApplicationSerializer
+class ApplyJobView(APIView):
+    def post(self, request, version, id=None):
+        serializer = JobApplicationSerializer(
+            data=request.data, 
+            context={'request': request}
+        )
         
-
-            
-
+        if serializer.is_valid():
+            try:
+                candidate = request.user.candidate_profile
+                
+                serializer.save(applicant=candidate)
+                return Response({
+                    "message": "Application submitted successfully!",
+                }, status=status.HTTP_201_CREATED)
+            except AttributeError:
+                return Response({
+                    "error": "User does not have a Candidate Profile."
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

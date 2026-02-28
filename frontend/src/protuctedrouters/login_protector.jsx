@@ -17,8 +17,9 @@ export default function LoginProtector({ children }) {
   }
 
   if (role === "CANDIDATE") {
-    return <Navigate to="/home" replace />;
+    return <Navigate to="/candidate/dashboard" replace />;
   }
 
   return children;
+  
 }

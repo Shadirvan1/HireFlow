@@ -71,7 +71,7 @@ class CandidateProfileView(views.APIView):
     def get(self, request, version):
         profile = request.user.candidate_profile
         serializer = self.serializer_class(profile)
-        return Response(serializer.data)
+        return Response(serializer.data,status=status.HTTP_200_OK)
 
     def put(self, request, version):
         profile = request.user.candidate_profile
@@ -79,7 +79,8 @@ class CandidateProfileView(views.APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully", "data": serializer.data})
-        return Response(serializer.errors, status=400)
+        print(serializer.errors)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -297,6 +298,7 @@ class LogoutView(views.APIView):
             except TokenError:
                 pass
         response.delete_cookie("refresh_token")
+        response.delete_cookie("access_token")
         return response
 
 
@@ -408,3 +410,36 @@ class RegisterViaInviteView(views.APIView):
             "company": invite.company.name,
             "role": invite.role
         }, status=201)
+    
+# views.py
+import random
+from rest_framework.views import APIView
+from rest_framework.response import Response
+
+from firebase_admin import auth as firebase_auth
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from firebase_admin import auth as firebase_auth 
+import firebase_config
+
+class FirebaseVerifyView(APIView):
+    def post(self, request, version):
+        id_token = request.data.get("id_token")
+
+        if not id_token:
+            return Response({"error": "No token provided"}, status=400)
+
+        try:
+            decoded_token = firebase_auth.verify_id_token(id_token)
+            phone_number = decoded_token.get("phone_number")
+
+            user = request.user
+            user.phone_number = phone_number
+            user.is_number_verified = True
+            user.save()
+
+            return Response({"message": "Phone verified successfully"})
+
+        except Exception as e:
+            return Response({"error": "Invalid Firebase token"}, status=400)

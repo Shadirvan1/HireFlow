@@ -1,7 +1,8 @@
 version: '3.9'
 
 services:
-  # 1. DATABASE
+
+  # 1. MAIN DATABASE
   db:
     image: postgres:15
     container_name: postgres_db
@@ -15,7 +16,21 @@ services:
     ports:
       - "5432:5432"
 
-  # 2. REDIS (Broker for Live Chat)
+  # 2. LIVE CHAT DATABASE  
+  live_chat_db:
+    image: postgres:15
+    container_name: live_chat_db
+    restart: always
+    environment:
+      POSTGRES_DB: hireflow_live_db
+      POSTGRES_USER: live_chat_user
+      POSTGRES_PASSWORD: 12345
+    volumes:
+      - live_chat_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  # 3. REDIS
   redis:
     image: redis:7-alpine
     container_name: redis_broker
@@ -23,7 +38,7 @@ services:
     ports:
       - "6379:6379"
 
-  # 3. OBJECT STORAGE
+  # 4. OBJECT STORAGE
   minio:
     image: quay.io/minio/minio
     container_name: minio
@@ -38,7 +53,7 @@ services:
       - "9000:9000"
       - "9001:9001"
 
-  # 4. MAIN BACKEND (HTTP)
+  # 5. MAIN BACKEND (HTTP)
   backend:
     container_name: django_backend
     restart: always
@@ -56,25 +71,25 @@ services:
     env_file:
       - ./backend/.env
 
-  # 5. LIVE CHAT SERVICE (WebSockets)
+  # 6. LIVE CHAT SERVICE (WebSockets)
   live_chat:
     container_name: django_live_chat
     restart: always
     build:
-      context: ./live_services 
+      context: ./live_services
       dockerfile: Dockerfile
-
     command: python manage.py runserver 0.0.0.0:8001
     volumes:
       - ./live_services:/app
     ports:
       - "8001:8001"
     depends_on:
-      - db
+      - live_chat_db
       - redis
     env_file:
       - ./live_services/.env
 
 volumes:
-  postgres_data: {}
-  minio_data: {}
+  postgres_data:
+  live_chat_db_data:
+  minio_data:
