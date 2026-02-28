@@ -22,7 +22,7 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
         ids = sorted([int(self.user.id), int(self.other_user_id)])
         self.room_group_name = f"private_{ids[0]}_{ids[1]}"
 
-        # ✅ Mark user online
+        
         await database_sync_to_async(cache.set)(
             f"user_online_{self.user.id}", True, timeout=None
         )

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../../redux/userReducer";
 import api from "../../api/api";
+import { disconnectSocket } from "../../api/socket";
 import {
   LayoutDashboard,
   Briefcase,
@@ -35,6 +36,7 @@ export default function HRSidebar() {
 
   const handleLogout = async () => {
     try {
+      disconnectSocket();
       await api.post("accounts/logout/");
     } catch (e) {
       console.log("Backend logout failed");

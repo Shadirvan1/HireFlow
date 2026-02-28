@@ -12,60 +12,102 @@ const ChatDashboard = () => {
     const [onlineUsers, setOnlineUsers] = useState({});
     const [loading, setLoading] = useState(false);
 
+    // =============================
+    // Load current user & employees
+    // =============================
     useEffect(() => {
         const loadData = async () => {
-            const meRes = await api.get("/accounts/me/");
-            const empRes = await api.get("/management/get/all/employees/");
+            try {
+                const meRes = await api.get("/accounts/me/");
+                const empRes = await api.get("/management/get/all/employees/");
 
-            setCurrentUser({ id: meRes.data.user_id });
+                setCurrentUser({ id: meRes.data.user_id });
 
-            const formatted = empRes.data.map(emp => ({
-                id: emp.user?.id,
-                username: emp.user?.username,
-                profileImage: emp.profile_image,
-            }));
+                const formatted = empRes.data.map(emp => ({
+                    id: emp.user?.id,
+                    username: emp.user?.username,
+                    profileImage: emp.profile_image,
+                }));
 
-            setUsers(formatted);
+                setUsers(formatted);
+            } catch (err) {
+                console.error("Initialization error:", err);
+            }
         };
 
         loadData();
     }, []);
 
-    // Online polling
+    // =============================
+    // Online polling every 5 seconds
+    // =============================
     useEffect(() => {
         if (!users.length) return;
 
         const interval = setInterval(async () => {
-            const ids = users.map(u => u.id).join(",");
-            const res = await api.get(`http://127.0.0.1:8001/api/chat/online-status/?ids=${ids}`);
-            setOnlineUsers(res.data);
-        }, 5000);
+            try {
+                const ids = users.map(u => u.id).join(",");
+                const res = await api.get(
+                    `http://127.0.0.1:8001/api/chat/online-status/?ids=${ids}`
+                );
+                setOnlineUsers(res.data);
+            } catch (err) {
+                console.error("Online status error:", err);
+            }
+        }, 10000);
 
         return () => clearInterval(interval);
     }, [users]);
 
+
     const handleSelectUser = useCallback(async (user) => {
-        setSelectedUser(user);
-        setMessages([]);
-        setLoading(true);
+        try {
+            setSelectedUser(user);
+            setMessages([]);
+            setLoading(true);
 
-        const res = await api.get(`http://127.0.0.1:8001/api/chat/history/${user.id}/`);
-        setMessages(res.data);
+            // Load chat history
+            const res = await api.get(
+                `http://127.0.0.1:8001/api/chat/history/${user.id}/`
+            );
 
-        disconnectSocket();
+            setMessages(res.data);
 
-        connectSocket(user.id, (newMessage) => {
-            setMessages(prev => [...prev, newMessage]);
-        });
+            // Disconnect previous socket
+            disconnectSocket();
 
-        setLoading(false);
+            // Connect new socket
+            connectSocket(user.id, (newMessage) => {
+                setMessages(prev => [...prev, newMessage]);
+            });
+
+        } catch (err) {
+            console.error("Error switching chat:", err);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    // 🔥 NO optimistic message
+
     const handleSend = (text) => {
         if (!text.trim()) return;
         sendMessage(text);
     };
+
+
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            disconnectSocket();
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
+        return () => {
+            disconnectSocket();
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, []);
+
 
     return (
         <div className="flex h-screen">
@@ -76,7 +118,7 @@ const ChatDashboard = () => {
                 onlineUsers={onlineUsers}
             />
 
-            {selectedUser && (
+            {selectedUser ? (
                 <ChatWindow
                     selectedUser={selectedUser}
                     messages={messages}
@@ -84,6 +126,10 @@ const ChatDashboard = () => {
                     currentUser={currentUser}
                     loading={loading}
                 />
+            ) : (
+                <div className="flex flex-1 items-center justify-center text-gray-400">
+                    Select a user to start chatting
+                </div>
             )}
         </div>
     );
