@@ -88,4 +88,68 @@ class GetCandidateView(views.APIView):
             return Response({"error":"User is guest"},status=status.HTTP_400_BAD_REQUEST)
         serializer = CandidateProfileSerializer(candidate)
         return Response(serializer.data,status=status.HTTP_200_OK)
-    
+
+
+from .models import Notification
+
+
+from .models import Notification
+from .serializers import NotificationSerializer,NotificationCreateSerializer
+class CreateNotificationAPIView(views.APIView):
+
+    """
+    GET: List all notifications for the current user
+    """
+    def get(self, request, version):
+        notifications = Notification.objects.filter(
+            user_id=request.user.id
+        ).order_by('-created_at')
+
+        serializer = NotificationCreateSerializer(notifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    def post(self, request, version):
+
+        serializer = NotificationCreateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"status": "Notification created successfully"},
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+from django.shortcuts import get_object_or_404
+
+class NotificationDetailAPIView(views.APIView):
+
+
+   
+    def patch(self, request, version, pk):
+        notification = get_object_or_404(
+            Notification,
+            pk=pk,
+            user=request.user
+        )
+
+        notification.is_read = True
+        notification.save()
+
+        return Response(
+            {"status": "updated"},
+            status=status.HTTP_200_OK
+        )
+
+    def delete(self, request, version, pk):
+        notification = get_object_or_404(
+            Notification,
+            pk=pk,
+            user=request.user
+        )
+
+        notification.delete()
+        return Response(
+            {"status": "deleted"},
+            status=status.HTTP_204_NO_CONTENT
+        )

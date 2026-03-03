@@ -10,7 +10,7 @@ import VerifyEmailPage from "./authentication/confirmation";
 import AdminDashboard from "./adminpages/dashboard";
 import Login_protector from "./protuctedrouters/login_protector";
 import ProtectedRoute from "./protuctedrouters/Protuctedroute";
-import HrDashboard from "./hrpages/dashboard";
+import HrDashboard from "./hrpages/dashboard/dashboard";
 import Sidebar from "./adminpages/sidebar";
 import HR_details from "./adminpages/hr_details";
 import SetupMFA from "./authentication/enable_mfa";
@@ -32,6 +32,7 @@ import FindJobs from "./candidatepages/jobs/findjobs";
 import HRApplications from "./hrpages/jobs/applications";
 import ApplyJob from "./candidatepages/jobs/applyjobs";
 import ChatPage from "./hrpages/chat/mainchatpage";
+import HRNotification from "./hrpages/dashboard/notification";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -74,6 +75,7 @@ function App() {
           <Route path="security" element={<SecuritySettings />} />
           <Route path="applications" element={<HRApplications />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="notifications" element={<HRNotification />} />
           </Route>
           
           

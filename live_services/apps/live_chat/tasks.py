@@ -1,33 +1,25 @@
 from celery import shared_task
-from django.core.mail import send_mail
-from django.conf import settings
-from django.core.cache import cache
+import requests
 
 
-@shared_task
-def send_chat_notification(receiver_id, sender_name, message_text):
-
-    # Check again before sending (important!)
-    is_online = cache.get(f"user_online_{receiver_id}")
-
-    if is_online:
-        return  
-
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
+@shared_task(bind=True, max_retries=3)
+def send_notification_to_backend(self, receiver_id, sender_id, message_text):
+    URL = "http://backend:8000/api/v1/management/add/notifications/"
     try:
-        user = User.objects.get(id=receiver_id)
-    except User.DoesNotExist:
-        return
+        response = requests.post(
+            URL,
+            json={
+                "user": receiver_id,
+                "sender": sender_id,
+                "title": "New Message",
+                "message": message_text,
+            },
+            timeout=5
+        )
 
-    subject = f"New message from {sender_name}"
-    message = f"You received a new message:\n\n{message_text}"
+        response.raise_for_status()
+        print("✅ Notification sent to backend")
 
-    send_mail(
-        subject,
-        message,
-        settings.EMAIL_HOST_USER,
-        [user.email],
-        fail_silently=False,
-    )
+    except Exception as exc:
+        print("❌ Backend request failed, retrying...")
+        raise self.retry(exc=exc, countdown=10)

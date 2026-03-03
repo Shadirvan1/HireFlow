@@ -30,7 +30,7 @@ class ChatHistoryView(APIView):
         ).order_by("timestamp")
 
         serializer = MessageSerializer(messages, many=True)
-        print(serializer.data)
+        
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import api from "../../api/api";
 import { connectSocket, disconnectSocket, sendMessage } from "../../api/socket";
 import ChatSidebar from "./chatsidebar";
@@ -11,6 +11,8 @@ const ChatDashboard = () => {
     const [currentUser, setCurrentUser] = useState(null);
     const [onlineUsers, setOnlineUsers] = useState({});
     const [loading, setLoading] = useState(false);
+
+    const socketConnectedUser = useRef(null);
 
     // =============================
     // Load current user & employees
@@ -39,46 +41,39 @@ const ChatDashboard = () => {
     }, []);
 
     // =============================
-    // Online polling every 5 seconds
+    // Select user & connect socket
     // =============================
-    useEffect(() => {
-        if (!users.length) return;
-
-        const interval = setInterval(async () => {
-            try {
-                const ids = users.map(u => u.id).join(",");
-                const res = await api.get(
-                    `http://127.0.0.1:8001/api/chat/online-status/?ids=${ids}`
-                );
-                setOnlineUsers(res.data);
-            } catch (err) {
-                console.error("Online status error:", err);
-            }
-        }, 10000);
-
-        return () => clearInterval(interval);
-    }, [users]);
-
-
     const handleSelectUser = useCallback(async (user) => {
         try {
             setSelectedUser(user);
             setMessages([]);
             setLoading(true);
 
-            // Load chat history
-            const res = await api.get(
-                `http://127.0.0.1:8001/api/chat/history/${user.id}/`
-            );
-
+            
+            const res = await api.get(`http://127.0.0.1:8001/api/chat/history/${user.id}/`);
             setMessages(res.data);
 
-            // Disconnect previous socket
+           
+            if (socketConnectedUser.current === user.id) return;
+
             disconnectSocket();
 
-            // Connect new socket
-            connectSocket(user.id, (newMessage) => {
-                setMessages(prev => [...prev, newMessage]);
+            socketConnectedUser.current = user.id;
+
+            connectSocket(user.id, (data) => {
+
+                if (data.type === "presence") {
+                    setOnlineUsers(prev => ({
+                        ...prev,
+                        [data.user_id]: data.status === "online"
+                    }));
+                    return;
+                }
+
+                setMessages(prev => {
+                    if (prev.find(m => m.id === data.id)) return prev;
+                    return [...prev, data];
+                });
             });
 
         } catch (err) {
@@ -94,7 +89,7 @@ const ChatDashboard = () => {
         sendMessage(text);
     };
 
-
+ 
     useEffect(() => {
         const handleBeforeUnload = () => {
             disconnectSocket();
@@ -107,7 +102,6 @@ const ChatDashboard = () => {
             window.removeEventListener("beforeunload", handleBeforeUnload);
         };
     }, []);
-
 
     return (
         <div className="flex h-screen">

@@ -79,7 +79,7 @@ class CandidateProfileView(views.APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully", "data": serializer.data})
-        print(serializer.errors)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -270,7 +270,7 @@ class RefreshTokenView(views.APIView):
 
     def post(self, request, version):
         refresh_token = request.COOKIES.get("refresh_token")
-        print(refresh_token)
+        
         if not refresh_token:
             return Response({"error": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED)
         try:
