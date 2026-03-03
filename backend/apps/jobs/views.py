@@ -51,8 +51,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from apps.accounts.models import CandidateProfile
+from rest_framework.permissions import IsAuthenticated
 
 class GetJobByIdview(APIView):
+    permission_classes=[IsAuthenticated]
     def get(self, request, version, id=None):
         try:
             job = Job.objects.get(id=id)
@@ -75,6 +77,7 @@ class GetJobByIdview(APIView):
 
 from .serializers import JobApplicationSerializer
 class ApplyJobView(APIView):
+    permission_classes=[IsAuthenticated]
     def post(self, request, version, id=None):
         serializer = JobApplicationSerializer(
             data=request.data, 

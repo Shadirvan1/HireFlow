@@ -3,7 +3,7 @@ import api from "../../api/api";
 import { connectSocket, disconnectSocket, sendMessage } from "../../api/socket";
 import ChatSidebar from "./chatsidebar";
 import ChatWindow from "./chatwindow";
-
+import LiveApi from "../../api/Liveapi";
 const ChatDashboard = () => {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -50,7 +50,7 @@ const ChatDashboard = () => {
             setLoading(true);
 
             
-            const res = await api.get(`http://127.0.0.1:8001/api/chat/history/${user.id}/`);
+            const res = await LiveApi.get(`history/${user.id}/`);
             setMessages(res.data);
 
            

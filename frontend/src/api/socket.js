@@ -1,5 +1,5 @@
 let socket = null;
-
+const BASE_URL = import.meta.env.VITE_WS_BASE;
 export const connectSocket = (userId, onMessage) => {
     // Prevent multiple connections to the same user
     if (socket) {
@@ -10,7 +10,7 @@ export const connectSocket = (userId, onMessage) => {
     console.log(`Attempting to connect to WebSocket for User ID: ${userId}`);
     
     socket = new WebSocket(
-        `ws://127.0.0.1:8001/ws/chat/${userId}/`
+        `${BASE_URL}/chat/${userId}/`
     );
 
     socket.onopen = () => {

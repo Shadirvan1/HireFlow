@@ -9,8 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 User = get_user_model()
 
 class AllCompanyEmployeesView(views.APIView):
-    
-
+    permission_classes=[IsAuthenticated]
+   
     def get(self, request, version):
         try:
             hr_profile = HRProfile.objects.get(user=request.user)
@@ -23,6 +23,7 @@ class AllCompanyEmployeesView(views.APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class ToggleEmployeesView(views.APIView):
+    permission_classes=[IsAuthenticated]
     def patch(self,request,version,id=None):
         try:
             toggeld_user = HRProfile.objects.get(id=id)
@@ -39,6 +40,7 @@ class ToggleEmployeesView(views.APIView):
             return Response({"error":"This hr not belongs to your firm"},status=status.HTTP_400_BAD_REQUEST)
         return Response({"success":"successfully Toggled"},status=status.HTTP_200_OK)
 class ToggleEmployeeRoleView(views.APIView):
+    permission_classes=[IsAuthenticated]
 
     ALLOWED_ROLES = ["HR", "INTERVIEWER"]
 
@@ -81,6 +83,7 @@ class ToggleEmployeeRoleView(views.APIView):
 from apps.accounts.models import CandidateProfile
 from apps.accounts.serializers import CandidateProfileSerializer
 class GetCandidateView(views.APIView):
+    permission_classes=[IsAuthenticated]
     def get(self,request,version):
         try:
             candidate = CandidateProfile.objects.get(user=request.user)
@@ -96,6 +99,7 @@ from .models import Notification
 from .models import Notification
 from .serializers import NotificationSerializer,NotificationCreateSerializer
 class CreateNotificationAPIView(views.APIView):
+    permission_classes=[IsAuthenticated]
 
     """
     GET: List all notifications for the current user
@@ -123,9 +127,8 @@ class CreateNotificationAPIView(views.APIView):
 from django.shortcuts import get_object_or_404
 
 class NotificationDetailAPIView(views.APIView):
+    permission_classes=[IsAuthenticated]
 
-
-   
     def patch(self, request, version, pk):
         notification = get_object_or_404(
             Notification,
