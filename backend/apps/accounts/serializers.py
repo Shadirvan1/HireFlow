@@ -137,6 +137,8 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
 class SeekerLoginSerializer(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField(write_only=True)
+    fcm_token = serializers.CharField(write_only=True, required=False, allow_null=True)
+    
 
     def validate(self, attrs):
         email = attrs.get("email")

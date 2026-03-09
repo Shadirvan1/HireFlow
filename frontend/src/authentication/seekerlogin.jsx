@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import api from "../api/api";
 import { loginSuccess } from "../redux/userReducer";
+import { generateFCMToken } from "../firebase"
 
 export default function Login() {
   const navigate = useNavigate();
@@ -46,7 +47,10 @@ export default function Login() {
     setGeneralError("");
 
     try {
-      const { data } = await api.post("accounts/login/", formData);
+
+      const fcmToken = await generateFCMToken();
+
+      const { data } = await api.post("accounts/login/", {...formData,"fcm_token":fcmToken});
 
 
       if (data.mfa_required && !formData.otp) {

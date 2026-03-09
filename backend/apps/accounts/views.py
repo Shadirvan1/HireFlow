@@ -205,6 +205,10 @@ class LoginView(views.APIView):
 
 
         login(request, user)
+        fcm_token = serializer.validated_data.get("fcm_token")
+        if fcm_token:
+            user.fcm_token = fcm_token
+            user.save(update_fields=["fcm_token"])
 
         tokens = create_tokens_for_user(user)
 
@@ -253,11 +257,30 @@ class DisableMFAView(views.APIView):
         if disable_mfa(user, otp):
             return Response({"message": "MFA disabled successfully"}, status=status.HTTP_200_OK)
         return Response({"error": "Invalid OTP or MFA not enabled"}, status=status.HTTP_400_BAD_REQUEST)
+    
+from lambda_push.notification_service import send_notification
+from lambda_push.lambda_function import initialize_firebase
+from firebase_admin import messaging
+
+
 class Me(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request,version):
+        initialize_firebase()
         user = request.user
+        send_notification(
+            user=user,
+            title="Test Notification 🚀",
+            body="This is a test push from Django backend",
+            data={
+                "type": "test",
+                "user_id": str(user.id)
+            }
+        )
+        print("notification triggered")
+       
+
 
         return Response({
             "user_id": user.id,

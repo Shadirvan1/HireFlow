@@ -17,6 +17,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - internal
+    ports:
+      - "5432:5432"
 
   # =============================
   # 2️⃣ LIVE CHAT DATABASE
@@ -31,6 +33,18 @@ services:
       POSTGRES_PASSWORD: 12345
     volumes:
       - live_chat_db_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    ports:
+      - "5433:5432"
+  chroma:
+    image: chromadb/chroma
+    container_name: chroma_db
+    restart: always
+    ports:
+      - "8005:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
     networks:
       - internal
 
@@ -82,6 +96,8 @@ services:
       - ./backend/.env
     networks:
       - internal
+    ports:
+      - "8000:8000"
 
   # =============================
   # 6️⃣ LIVE CHAT SERVICE
@@ -139,6 +155,23 @@ services:
       - live_chat
     networks:
       - internal
+  ai_service:
+    container_name: fastapi_ai_service
+    restart: always
+    build:
+      context: ./ai_service
+      dockerfile: Dockerfile
+    command: uvicorn app_main.main:app --host 0.0.0.0 --port 8002 --reload
+    volumes:
+      - ./ai_service:/app
+    depends_on:
+      - chroma
+    env_file:
+      - ./ai_service/.env
+    networks:
+      - internal
+    ports:
+      - "8002:8002"
 
 # =============================
 # NETWORK
@@ -153,3 +186,4 @@ volumes:
   postgres_data:
   live_chat_db_data:
   minio_data:
+  chroma_data:

@@ -59,7 +59,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ("ADMIN", "Admin"),
         ("HR", "HR"),
     )
-
+    fcm_token = models.TextField(null=True, blank=True)
     mfa_enabled = models.BooleanField(default=False)
     mfa_secret = models.CharField(max_length=255, blank=True, null=True)
 

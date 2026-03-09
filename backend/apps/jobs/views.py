@@ -42,6 +42,7 @@ class CompanyActivityView(APIView):
 class GetAllJobsView(APIView):
     def get(self,request,version):
         jobs = Job.objects.filter(is_approve = True,is_active = True)
+        
         serializer = JobSerializer(jobs,many=True)
         return Response(serializer.data,status=status.HTTP_200_OK)
 
