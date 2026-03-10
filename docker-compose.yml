@@ -48,6 +48,20 @@ services:
     networks:
       - internal
 
+  mongodb:
+    image: mongo:7
+    container_name: mongodb_ai_logs
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_pass
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - internal
+
   # =============================
   # 3️⃣ REDIS (Broker + Channels)
   # =============================
@@ -102,26 +116,6 @@ services:
   # =============================
   # 6️⃣ LIVE CHAT SERVICE
   # =============================
-  live_chat:
-    container_name: django_live_chat
-    restart: always
-    build:
-      context: ./live_services
-      dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8001
-    volumes:
-      - ./live_services:/app
-    depends_on:
-      - live_chat_db
-      - redis
-    env_file:
-      - ./live_services/.env
-    networks:
-      - internal
-
-  # =============================
-  # 7️⃣ CELERY WORKER
-  # =============================
   celery_worker:
     container_name: live_chat_celery
     restart: always
@@ -134,10 +128,29 @@ services:
     depends_on:
       - redis
       - live_chat_db
+      
     env_file:
       - ./live_services/.env
     networks:
       - internal
+  live_chat:
+    container_name: django_live_chat
+    restart: always
+    build:
+      context: ./live_services
+      dockerfile: Dockerfile
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./live_services:/app
+    depends_on:
+      - live_chat_db
+      - redis
+      - celery_worker
+    env_file:
+      - ./live_services/.env
+    networks:
+      - internal
+
 
   # =============================
   # 8️⃣ NGINX API GATEWAY
@@ -166,6 +179,7 @@ services:
       - ./ai_service:/app
     depends_on:
       - chroma
+      - mongodb
     env_file:
       - ./ai_service/.env
     networks:
@@ -187,3 +201,4 @@ volumes:
   live_chat_db_data:
   minio_data:
   chroma_data:
+  mongodb_data:
