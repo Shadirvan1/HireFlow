@@ -1,8 +1,10 @@
 fastapi
 uvicorn
 chromadb
-google-generativeai
+google-genai
 openai
 pymongo
 python-dotenv
 pymupdf
+python-multipart
+minio

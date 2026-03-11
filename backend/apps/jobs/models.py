@@ -17,6 +17,7 @@ class Job(models.Model):
     description = models.TextField()
     requirements = models.TextField()
     responsibilities = models.TextField(blank=True, null=True)
+    embedd_id = models.CharField(blank=True,null=True)
 
     location = models.CharField(max_length=255,blank=True,null=True)
     salary_min = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)

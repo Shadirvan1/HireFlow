@@ -8,3 +8,6 @@ client = chromadb.HttpClient(
 resume_collection = client.get_or_create_collection(
     name="resumes"
 )
+job_collection = client.get_or_create_collection(
+    name="jobs"
+)
