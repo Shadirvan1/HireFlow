@@ -8,3 +8,6 @@ python-dotenv
 pymupdf
 python-multipart
 minio
+redis
+scikit-learn
+groq

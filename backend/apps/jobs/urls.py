@@ -7,4 +7,5 @@ urlpatterns = [
     path("get/all/jobs/",views.GetAllJobsView.as_view()),
     path("get/job/<int:id>/",views.GetJobByIdview.as_view()),
     path("job/apply/<int:id>/",views.ApplyJobView.as_view()),
+    path("job/ranking/<int:id>",views.ApplyJobView.as_view()),
 ]

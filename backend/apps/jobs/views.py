@@ -99,3 +99,48 @@ class ApplyJobView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+import requests
+import os 
+FASTAPI_URL=os.getenv("FASTAPI_URL")
+import requests
+
+
+
+
+
+class GetALLJobsRank(APIView):
+    def get(self, request, version):
+        user = request.user 
+        
+        try:
+            company = user.hr_profile.company
+            company_id = str(company.id) # Capture the company ID
+        except AttributeError:
+            return Response({"error": "HR Profile or Company not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        jobs = Job.objects.filter(
+            company=company, 
+            is_active=True, 
+            is_approve=True, 
+            embedd_id__isnull=False
+        )
+        job_ids = [job.embedd_id for job in jobs]
+        
+        if not job_ids:
+            return Response({"jobs": [], "message": "No valid jobs found"}, status=status.HTTP_200_OK)
+
+        try:
+            fastapi_url = f"{FASTAPI_URL}/rank-batch" 
+            # Send both job_ids AND company_id for security
+            payload = {
+                "job_ids": job_ids,
+                "company_id": company_id 
+            }
+            response = requests.post(fastapi_url, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                return Response({"jobs": response.json()}, status=status.HTTP_200_OK)
+            return Response({"error": "Ranking error"}, status=response.status_code)
+                
+        except requests.exceptions.RequestException:
+            return Response({"error": "Ranking server unreachable"}, status=503)
