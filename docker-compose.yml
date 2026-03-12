@@ -3,7 +3,7 @@ version: "3.9"
 services:
 
   # =============================
-  # 1️⃣ MAIN DATABASE
+  # 1️⃣ MAIN DATABASE (Postgres)
   # =============================
   db:
     image: postgres:15
@@ -21,49 +21,7 @@ services:
       - "5432:5432"
 
   # =============================
-  # 2️⃣ LIVE CHAT DATABASE
-  # =============================
-  live_chat_db:
-    image: postgres:15
-    container_name: live_chat_db
-    restart: always
-    environment:
-      POSTGRES_DB: hireflow_live_db
-      POSTGRES_USER: live_chat_user
-      POSTGRES_PASSWORD: 12345
-    volumes:
-      - live_chat_db_data:/var/lib/postgresql/data
-    networks:
-      - internal
-    ports:
-      - "5433:5432"
-  chroma:
-    image: chromadb/chroma
-    container_name: chroma_db
-    restart: always
-    ports:
-      - "8005:8000"
-    volumes:
-      - chroma_data:/chroma/chroma
-    networks:
-      - internal
-
-  mongodb:
-    image: mongo:7
-    container_name: mongodb_ai_logs
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo_admin
-      MONGO_INITDB_ROOT_PASSWORD: mongo_pass
-    volumes:
-      - mongodb_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - internal
-
-  # =============================
-  # 3️⃣ REDIS (Broker + Channels)
+  # 2️⃣ REDIS (Celery broker)
   # =============================
   redis:
     image: redis:7-alpine
@@ -73,7 +31,7 @@ services:
       - internal
 
   # =============================
-  # 4️⃣ MINIO (Object Storage)
+  # 3️⃣ MINIO (Object storage)
   # =============================
   minio:
     image: quay.io/minio/minio
@@ -92,7 +50,7 @@ services:
       - internal
 
   # =============================
-  # 5️⃣ MAIN DJANGO BACKEND
+  # 4️⃣ BACKEND DJANGO
   # =============================
   backend:
     container_name: django_backend
@@ -105,7 +63,10 @@ services:
       - ./backend:/app
     depends_on:
       - db
+      - redis
       - minio
+      - backend_celery_worker
+      - backend_celery_beat
     env_file:
       - ./backend/.env
     networks:
@@ -114,46 +75,83 @@ services:
       - "8000:8000"
 
   # =============================
-  # 6️⃣ LIVE CHAT SERVICE
+  # 5️⃣ BACKEND CELERY WORKER
   # =============================
-  celery_worker:
-    container_name: live_chat_celery
+  backend_celery_worker:
+    container_name: backend_celery_worker
     restart: always
     build:
-      context: ./live_services
+      context: ./backend
       dockerfile: Dockerfile
-    command: celery -A live_service_main worker --loglevel=info
+    command: celery -A hireflow_main worker --loglevel=info
     volumes:
-      - ./live_services:/app
+      - ./backend:/app
     depends_on:
       - redis
-      - live_chat_db
-      
+      - db
     env_file:
-      - ./live_services/.env
-    networks:
-      - internal
-  live_chat:
-    container_name: django_live_chat
-    restart: always
-    build:
-      context: ./live_services
-      dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8001
-    volumes:
-      - ./live_services:/app
-    depends_on:
-      - live_chat_db
-      - redis
-      - celery_worker
-    env_file:
-      - ./live_services/.env
+      - ./backend/.env
+    environment:
+      - TZ=Asia/Kolkata
     networks:
       - internal
 
+  # =============================
+  # 6️⃣ BACKEND CELERY BEAT
+  # =============================
+  backend_celery_beat:
+    container_name: backend_celery_beat
+    restart: always
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A hireflow_main beat --loglevel=info
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - backend_celery_worker
+      - redis
+      - db
+    env_file:
+      - ./backend/.env
+    environment:
+      - TZ=Asia/Kolkata
+    networks:
+      - internal
 
   # =============================
-  # 8️⃣ NGINX API GATEWAY
+  # 7️⃣ CHROMA DB
+  # =============================
+  chroma:
+    image: chromadb/chroma
+    container_name: chroma_db
+    restart: always
+    ports:
+      - "8005:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - internal
+
+  # =============================
+  # 8️⃣ MONGODB (AI logs)
+  # =============================
+  mongodb:
+    image: mongo:7
+    container_name: mongodb_ai_logs
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo_admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_pass
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - internal
+
+  # =============================
+  # 9️⃣ NGINX API GATEWAY
   # =============================
   nginx:
     image: nginx:latest
@@ -165,9 +163,12 @@ services:
       - ./api_gateway/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - backend
-      - live_chat
     networks:
       - internal
+
+  # =============================
+  # 🔟 AI SERVICE (FastAPI)
+  # =============================
   ai_service:
     container_name: fastapi_ai_service
     restart: always
@@ -199,7 +200,6 @@ networks:
 # =============================
 volumes:
   postgres_data:
-  live_chat_db_data:
   minio_data:
   chroma_data:
   mongodb_data:

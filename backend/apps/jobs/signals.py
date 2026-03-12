@@ -4,10 +4,16 @@ from django.dispatch import receiver
 from .models import Job
 import requests
 import os 
+from lambda_push.notification_service import send_notification
+from apps.accounts.models import HRProfile
+
 FASTAPI_URL = os.getenv("FASTAPI_URL")
 @receiver(post_save, sender=Job)
 def auto_approve_job(sender, instance: Job, created, **kwargs):
-
+    hr_profile = HRProfile.objects.filter(company=instance.company).first()
+    company_user = hr_profile.user if hr_profile else None
+    
+    
     print("this is activated")
 
     if created:
@@ -49,8 +55,29 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
                 instance.embedd_id = result.get("embedd_id")
 
                 instance.save(update_fields=["is_approve", "embedd_id"])
+                send_notification(
+                    user=company_user,
+                    title="Job Approved ✅",
+                    body="Your job application was posted successfully.",
+                    data={
+                        "type": "job_approved",
+                        "job_id": str(instance.id)
+                    }
+                )
 
                 print("completed")
+            else:
+
+                send_notification(
+                    user=company_user,
+                    title="Job Rejected ❌",
+                    body="AI rejected your job post due to policy or content issues.",
+                    data={
+                        "type": "job_rejected",
+                        "job_id": str(instance.id)
+                    }
+                )
+
 
         except Exception as e:
             print(f"LLM verification failed for Job {instance.id}: {e}")

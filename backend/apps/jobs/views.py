@@ -124,19 +124,22 @@ class GetALLJobsRank(APIView):
             is_approve=True, 
             embedd_id__isnull=False
         )
+        
         job_ids = [job.embedd_id for job in jobs]
         
         if not job_ids:
             return Response({"jobs": [], "message": "No valid jobs found"}, status=status.HTTP_200_OK)
 
         try:
-            fastapi_url = f"{FASTAPI_URL}/rank-batch" 
+            fastapi_url = f"{FASTAPI_URL}/rank-batch"
             # Send both job_ids AND company_id for security
             payload = {
                 "job_ids": job_ids,
                 "company_id": company_id 
             }
+
             response = requests.post(fastapi_url, json=payload, timeout=10)
+            print(response)
             
             if response.status_code == 200:
                 return Response({"jobs": response.json()}, status=status.HTTP_200_OK)

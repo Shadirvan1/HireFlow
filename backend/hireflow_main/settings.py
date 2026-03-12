@@ -33,8 +33,8 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    
     ]
+
 
 CORS_ALLOW_CREDENTIALS = True
 # Application definition
@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "storages",
+    'django_celery_beat',
 
 
 ]
@@ -82,6 +83,21 @@ REST_FRAMEWORK = {
 }
 
 
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    "daily-job-alerts": {
+        "task": "apps.jobs.tasks.send_daily_job_notifications",
+        "schedule": crontab(hour=10, minute=30),
+    },
+    "daily-job-alerts-evening": {
+        "task": "apps.jobs.tasks.send_daily_job_notifications",
+        "schedule": crontab(hour=18, minute=30),  
+    },
+}
 
 
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -210,7 +226,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
+CELERY_ENABLE_UTC = True
 
 USE_I18N = True
 

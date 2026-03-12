@@ -131,11 +131,9 @@ async def process_resume(
         # Clear redis cache if necessary
         cache_key = f"job_ranking:{company_id}:{job_embedding_id}"
         redis_client.delete(cache_key)
-        # redis_client.delete(f"results:{job_embedding_id}") 
 
-        # 5. MongoDB Audit Log with company_id
         log_entry = {
-            "company_id": company_id,  # <--- Added to Logs
+            "company_id": company_id,
             "application_id": application_id,
             "resume_id": file_id,
             "job_id": job_embedding_id,

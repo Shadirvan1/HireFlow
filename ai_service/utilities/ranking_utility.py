@@ -4,7 +4,6 @@ from collections import defaultdict
 from database.redis_client import redis_client
 from services.llm_reranking import rerank_candidates
 
-# Chroma client
 client = chromadb.HttpClient(host="chroma", port=8000)
 
 resume_collection = client.get_collection("resumes")
@@ -15,12 +14,10 @@ async def perform_ranking_logic(job_id: str, company_id: str):
 
     cache_key = f"job_ranking:{company_id}:{job_id}"
 
-    # 1️⃣ Check Redis cache
     cached = redis_client.get(cache_key)
     if cached:
         return json.loads(cached)
 
-    # 2️⃣ Build filter
     job_filter = {
         "$and": [
             {"job_id": job_id},
@@ -28,7 +25,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
         ]
     }
 
-    # 3️⃣ Fetch Job embedding + text
     job = job_collection.get(
         where=job_filter,
         include=["documents", "embeddings"]
@@ -44,7 +40,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
     jd_embedding = job["embeddings"][0]
     job_text = job["documents"][0] if job["documents"] else ""
 
-    # 4️⃣ Query resumes using job embedding
     query_results = resume_collection.query(
         query_embeddings=[jd_embedding],
         where=job_filter,
@@ -63,9 +58,10 @@ async def perform_ranking_logic(job_id: str, company_id: str):
             "message": "No candidates applied"
         }
 
-    # 5️⃣ Aggregate candidate scores
     candidate_scores = defaultdict(list)
-    candidate_resumes = {}
+
+    # 🆕 store multiple chunks
+    candidate_chunks = defaultdict(list)
 
     total = len(query_results["ids"][0])
 
@@ -78,7 +74,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
         application_id = str(metadata.get("application_id"))
         applicant_id = str(metadata.get("applicant_id"))
 
-        # Convert distance → percentage
         raw_score = (1 - distance) * 100
         percentage_score = max(0, min(100, raw_score))
 
@@ -86,36 +81,36 @@ async def perform_ranking_logic(job_id: str, company_id: str):
 
         candidate_scores[key].append(percentage_score)
 
-        if key not in candidate_resumes:
-            candidate_resumes[key] = document
+        # 🆕 collect chunks
+        if len(candidate_chunks[key]) < 3:  # limit chunks per candidate
+            candidate_chunks[key].append(document)
 
-    # 6️⃣ Build candidate list
     ranked = []
 
     for (application_id, applicant_id), scores in candidate_scores.items():
 
         final_score = max(scores)
 
+        # 🆕 combine chunks
+        combined_resume = "\n\n".join(candidate_chunks[(application_id, applicant_id)])
+
         ranked.append({
             "application_id": application_id,
             "applicant_id": applicant_id,
             "vector_score": round(float(final_score), 2),
-            "resume": candidate_resumes[(application_id, applicant_id)]
+            "resume": combined_resume
         })
 
-    # 7️⃣ Sort by vector score
     ranked.sort(
         key=lambda x: x["vector_score"],
         reverse=True
     )
 
-    # 8️⃣ Top candidates for LLM rerank
     top_candidates = ranked[:30]
 
     final_results = top_candidates[:10]
     source = "vector_search"
 
-    # 9️⃣ LLM Reranking
     try:
 
         llm_results = rerank_candidates(job_text, top_candidates)
@@ -144,12 +139,10 @@ async def perform_ranking_logic(job_id: str, company_id: str):
     except Exception as e:
         print("LLM rerank error:", e)
 
-    # 🔟 Remove resume text before response
     for r in final_results:
         if "resume" in r:
             r.pop("resume")
 
-    # 1️⃣1️⃣ Build response
     response = {
         "job_id": job_id,
         "company_id": company_id,
@@ -158,7 +151,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
         "results": final_results
     }
 
-    # 1️⃣2️⃣ Cache for 5 minutes
     redis_client.setex(cache_key, 300, json.dumps(response))
 
     return response

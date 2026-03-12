@@ -43,7 +43,7 @@ class SeekerRegisterView(views.APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+#TODO:change to serializer 
 class ResendEmailLinkView(views.APIView):
     permission_classes = [AllowAny]
 
@@ -78,7 +78,7 @@ class CandidateProfileView(views.APIView):
         serializer = self.serializer_class(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Profile updated successfully", "data": serializer.data})
+            return Response({"message": "Profile updated successfully", "data": serializer.data},status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -226,7 +226,7 @@ class LoginView(views.APIView):
 
         response = set_tokens_in_response(response, tokens)
         return response
-    
+
 
 class SetupMFAView(views.APIView):
     permission_classes = [IsAuthenticated]
@@ -271,7 +271,7 @@ class Me(views.APIView):
         user = request.user
         send_notification(
             user=user,
-            title="Test Notification 🚀",
+            title="User Refreshed",
             body="This is a test push from Django backend",
             data={
                 "type": "test",
