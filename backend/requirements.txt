@@ -22,3 +22,5 @@ drf-spectacular
 celery
 redis
 django-celery-beat
+
+

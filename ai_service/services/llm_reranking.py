@@ -18,7 +18,7 @@ def rerank_candidates(job_text, candidates):
         simplified = [
             {
                 "application_id": str(c["application_id"]),
-                "resume": c["resume"][:800]
+                "resume": c["resume"][:1200]
             }
             for c in subset
         ]
@@ -118,7 +118,7 @@ CANDIDATES:
 
             future = executor.submit(run_rerank)
 
-            result = future.result(timeout=5)
+            result = future.result(timeout=12)
 
             return result
 

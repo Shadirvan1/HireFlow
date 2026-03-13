@@ -24,6 +24,7 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def generate_embedding(text: str):
+    print(f"Generating embedding for text: {text[:50]}...")
    
 
     response = client.models.embed_content(
