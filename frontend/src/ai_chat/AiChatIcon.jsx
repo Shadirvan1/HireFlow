@@ -1,119 +1,173 @@
 import React, { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send, Loader2 } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
 import api from "../api/api";
 
 export default function AIChatButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState([
-    {  message: "Hello! I'm your HR assistant. How can I help you today?" }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [lastEvaluatedKey, setLastEvaluatedKey] = useState(null);
+  
   const scrollRef = useRef(null);
-  const constraintsRef = useRef(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Fetch initial history
   useEffect(() => {
+    if (isOpen && messages.length === 0) {
+      fetchHistory();
+    }
+  }, [isOpen]);
+
+  const fetchHistory = async (timestamp = null) => {
+    setIsLoadingHistory(true);
+    try {
+      // Pass the timestamp as a query param if it exists
+      const url = timestamp ? `/ai/chat/?last_timestamp=${timestamp}` : "/ai/chat/";
+      const response = await api.get(url);
+      
+      const newMessages = response.data.history || [];
+      
+      if (timestamp) {
+        // If loading more, prepend to the top and maintain scroll
+        const container = scrollRef.current;
+        const oldHeight = container.scrollHeight;
+        
+        setMessages(prev => [...newMessages, ...prev]);
+        
+        // Adjust scroll after DOM updates to keep position
+        setTimeout(() => {
+          container.scrollTop = container.scrollHeight - oldHeight;
+        }, 0);
+      } else {
+        setMessages(newMessages);
+        setTimeout(scrollToBottom, 100);
+      }
+      
+      setLastEvaluatedKey(response.data.last_evaluated_key);
+    } catch (err) {
+      console.error("History fetch error:", err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const scrollToBottom = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  };
+
+  const handleScroll = (e) => {
+    // If we hit the top and have a key to fetch more
+    if (e.target.scrollTop === 0 && lastEvaluatedKey && !isLoadingHistory) {
+      fetchHistory(lastEvaluatedKey.timestamp);
+    }
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMessage = { role: "user", content: input };
+    const userMessage = { role: "user", content: input, timestamp: Date.now() };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
+    setTimeout(scrollToBottom, 10);
 
     try {
-      // Replace with your actual backend endpoint
       const response = await api.post("/ai/chat/", { message: input });
-      
-      const aiResponse = { 
-        role: "ai", 
-        content: response.data.reply || response.data.message 
-      };
-      setMessages((prev) => [...prev, aiResponse]);
+      // Ensure we extract the string from the response
+      const botResponse = typeof response.data.response === 'string' 
+                          ? response.data.response 
+                          : JSON.stringify(response.data.response);
+                          
+      setMessages((prev) => [...prev, { role: "ai", content: botResponse, timestamp: Date.now() }]);
     } catch (err) {
-      setMessages((prev) => [...prev, { role: "ai", content: "Sorry, I'm having trouble connecting to the server." }]);
+      setMessages((prev) => [...prev, { role: "ai", content: "Connection error.", timestamp: Date.now() }]);
     } finally {
       setIsTyping(false);
+      setTimeout(scrollToBottom, 10);
     }
   };
 
   return (
-    <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-[9999]">
-      <motion.div
-        drag
-        dragConstraints={constraintsRef}
-        className="fixed pointer-events-auto cursor-grab active:cursor-grabbing"
-        style={{ left: 'calc(100vw - 80px)', top: 'calc(100vh - 80px)' }}
-      >
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-2xl transition-all"
+    <>
+      {!isOpen && (
+        <motion.button
+          initial={{ scale: 0 }} animate={{ scale: 1 }}
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-8 right-8 z-[9999] bg-blue-600 p-4 rounded-full shadow-2xl text-white"
         >
-          {isOpen ? <X size={24} /> : <Bot size={24} />}
-        </button>
+          <Bot size={28} />
+        </motion.button>
+      )}
 
+      <AnimatePresence>
         {isOpen && (
-          <div 
-            className="absolute bottom-16 right-0 w-80 md:w-96 h-[500px] bg-white shadow-2xl rounded-2xl flex flex-col border border-slate-200 overflow-hidden"
-            onPointerDown={(e) => e.stopPropagation()} 
-          >
-            {/* Header */}
-            <div className="bg-blue-600 p-4 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bot size={20} />
-                <span className="font-bold text-sm">HireFlow AI Assistant</span>
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}
+              className="w-full max-w-4xl h-full max-h-[800px] bg-white shadow-2xl rounded-3xl flex flex-col overflow-hidden"
+            >
+              <div className="bg-blue-600 p-5 text-white flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <Bot size={24} />
+                  <h2 className="font-bold">HireFlow AI</h2>
+                </div>
+                <button onClick={() => setIsOpen(false)}><X size={24} /></button>
               </div>
-            </div>
 
-            {/* Chat Messages Area */}
-            <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-3">
-              {messages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                    msg.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-none' 
-                    : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
-                  }`}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-sm">
-                    <Loader2 size={16} className="animate-spin text-blue-600" />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input Form */}
-            <form onSubmit={handleSendMessage} className="p-3 border-t bg-white flex gap-2">
-              <input 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 text-sm p-2 bg-slate-100 rounded-lg outline-none focus:ring-1 ring-blue-500"
-              />
-              <button 
-                type="submit" 
-                disabled={isTyping}
-                className="bg-blue-600 text-white p-2 rounded-lg disabled:opacity-50"
+              <div 
+                ref={scrollRef} 
+                onScroll={handleScroll}
+                className="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4"
               >
-                <Send size={18} />
-              </button>
-            </form>
+                {isLoadingHistory && (
+                  <div className="flex justify-center p-2">
+                    <Loader2 size={20} className="animate-spin text-blue-400" />
+                  </div>
+                )}
+
+                {messages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[80%] p-4 rounded-2xl ${
+                      msg.role === "user" ? "bg-blue-600 text-white" : "bg-white border text-slate-800"
+                    }`}>
+                      <div className="text-sm md:text-base prose prose-blue max-w-none">
+                        <ReactMarkdown>
+                          {String(msg.content)}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-white border p-4 rounded-2xl flex items-center gap-2">
+                      <Loader2 size={18} className="animate-spin text-blue-600" />
+                      <span className="text-sm text-slate-500">Thinking...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-3">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask a question..."
+                  className="flex-1 p-4 bg-slate-100 rounded-xl outline-none focus:ring-2 ring-blue-500"
+                />
+                <button type="submit" className="bg-blue-600 text-white px-6 rounded-xl font-medium">Send</button>
+              </form>
+            </motion.div>
           </div>
         )}
-      </motion.div>
-    </div>
+      </AnimatePresence>
+    </>
   );
 }

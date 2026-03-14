@@ -18,7 +18,7 @@ langchain
 langchain-community
 langchain-groq
 langgraph
-
+langchain-google-genai
 
 google-api-python-client 
 google-auth-httplib2 

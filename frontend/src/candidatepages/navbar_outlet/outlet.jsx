@@ -1,7 +1,7 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import CandidateNavbar from "./navbar";
-
+import AIChatButton from "../../ai_chat/AiChatIcon";
 export default function CandidateOutlet() {
   return (
     // min-h-screen ensures the background covers the whole page
@@ -18,6 +18,8 @@ export default function CandidateOutlet() {
         <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           {/* This is where your Find Jobs / Applications pages will render */}
           <Outlet />
+        </div><div>
+          <AIChatButton />
         </div>
       </main>
 

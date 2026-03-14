@@ -19,6 +19,32 @@ services:
       - internal
     ports:
       - "5432:5432"
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb_local
+    restart: always
+    # FIX: Add this line to resolve the SQLite permission error
+    user: root
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+    volumes:
+      - dynamodb_data:/data
+    ports:
+      - "8003:8000"
+    networks:
+      - internal
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_automation
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - WEBHOOK_URL=http://localhost:5678/
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - internal
 
   # =============================
   # 2️⃣ REDIS (Celery broker)
@@ -203,3 +229,4 @@ volumes:
   minio_data:
   chroma_data:
   mongodb_data:
+  dynamodb_data:
