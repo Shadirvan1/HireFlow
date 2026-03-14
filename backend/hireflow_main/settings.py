@@ -93,9 +93,13 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.jobs.tasks.send_daily_job_notifications",
         "schedule": crontab(hour=10, minute=30),
     },
+    "daily-job-alerts-afternoon": {
+        "task": "apps.jobs.tasks.send_daily_job_notifications",
+        "schedule": crontab(hour=12, minute=30),
+    },
     "daily-job-alerts-evening": {
         "task": "apps.jobs.tasks.send_daily_job_notifications",
-        "schedule": crontab(hour=18, minute=30),  
+        "schedule": crontab(hour=18, minute=30), 
     },
 }
 
@@ -109,16 +113,23 @@ AWS_S3_SIGNATURE_VERSION = "s3v4"
 AWS_S3_ADDRESSING_STYLE = "path"
 AWS_DEFAULT_ACL = None
 MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/"
+AWS_S3_VERIFY = False
+AWS_QUERYSTRING_AUTH = False
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles" # Where collectstatic will put files
 
+# 2. Keep Media (Resumes) on Minio
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+# 3. Define the Storage Split (Django 4.2+)
 STORAGES = {
     "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 from datetime import timedelta
@@ -143,6 +154,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
 }
+
 AUTH_USER_MODEL = "accounts.User"
 
 
@@ -237,4 +249,3 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'

@@ -59,3 +59,10 @@ async def ask_general_llm(message: str):
 
     return response.choices[0].message.content
 
+    
+from langchain_groq import ChatGroq
+
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0
+)

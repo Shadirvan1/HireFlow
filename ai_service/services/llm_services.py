@@ -1,99 +1,119 @@
-from .embedding import generate_embedding
-from vector_db.chroma_client import job_collection, resume_collection
-from services.chat_service import ask_llm
+# from .embedding import generate_embedding
+# from vector_db.chroma_client import job_collection, resume_collection
+# from services.chat_service import ask_llm
 
 
 
-def search_jobs(query: str, top_k: int = 10):
+# def search_jobs(query: str, top_k: int = 10):
 
-    try:
+#     try:
 
-        query_embedding = generate_embedding(query)
+#         query_embedding = generate_embedding(query)
 
-        results = job_collection.query(
-            query_embeddings=[query_embedding],
-            n_results=top_k
-        )
+#         results = job_collection.query(
+#             query_embeddings=[query_embedding],
+#             n_results=top_k
+#         )
 
-        jobs = []
+#         jobs = []
 
-        ids = results.get("ids", [[]])[0]
-        documents = results.get("documents", [[]])[0]
-        metadatas = results.get("metadatas", [[]])[0]
-        distances = results.get("distances", [[]])[0]
+#         ids = results.get("ids", [[]])[0]
+#         documents = results.get("documents", [[]])[0]
+#         metadatas = results.get("metadatas", [[]])[0]
+#         distances = results.get("distances", [[]])[0]
 
-        for i in range(len(ids)):
-            jobs.append({
-                "job_id": ids[i],
-                "job_text": documents[i],
-                "metadata": metadatas[i],
-                "vector_score": distances[i]
-            })
+#         for i in range(len(ids)):
+#             jobs.append({
+#                 "job_id": ids[i],
+#                 "job_text": documents[i],
+#                 "metadata": metadatas[i],
+#                 "vector_score": distances[i]
+#             })
 
       
-        answer = ask_llm(
-            question=query,
-            candidates=None,
-            jobs=jobs
-        )
+#         answer = ask_llm(
+#             question=query,
+#             candidates=None,
+#             jobs=jobs
+#         )
 
-        return {
-            "answer": answer,
-            "jobs": jobs
-        }
+#         return {
+#             "answer": answer,
+#             "jobs": jobs
+#         }
 
-    except Exception as e:
-        print("Job search error:", e)
+#     except Exception as e:
+#         print("Job search error:", e)
 
-        return {
-            "answer": "Sorry, I couldn't retrieve job information right now.",
-            "jobs": []
-        }
+#         return {
+#             "answer": "Sorry, I couldn't retrieve job information right now.",
+#             "jobs": []
+#         }
     
 
-def search_candidates(query: str, top_k: int = 10):
+# def search_candidates(query: str, top_k: int = 10):
 
-    try:
+#     try:
 
-        embedding = generate_embedding(query)
+#         embedding = generate_embedding(query)
 
-        results = resume_collection.query(
-            query_embeddings=[embedding],
-            n_results=top_k
-        )
+#         results = resume_collection.query(
+#             query_embeddings=[embedding],
+#             n_results=top_k
+#         )
 
-        candidates = []
+#         candidates = []
 
-        ids = results.get("ids", [[]])[0]
-        documents = results.get("documents", [[]])[0]
-        metadatas = results.get("metadatas", [[]])[0]
-        distances = results.get("distances", [[]])[0]
+#         ids = results.get("ids", [[]])[0]
+#         documents = results.get("documents", [[]])[0]
+#         metadatas = results.get("metadatas", [[]])[0]
+#         distances = results.get("distances", [[]])[0]
 
-        for i in range(len(ids)):
-            candidates.append({
-                "candidate_id": ids[i],
-                "resume_text": documents[i],
-                "metadata": metadatas[i],
-                "vector_score": distances[i]
-            })
+#         for i in range(len(ids)):
+#             candidates.append({
+#                 "candidate_id": ids[i],
+#                 "resume_text": documents[i],
+#                 "metadata": metadatas[i],
+#                 "vector_score": distances[i]
+#             })
 
-        # Send data to LLM for reasoning
-        answer = ask_llm(
-            question=query,
-            candidates=candidates,
-            jobs=None
-        )
+#         # Send data to LLM for reasoning
+#         answer = ask_llm(
+#             question=query,
+#             candidates=candidates,
+#             jobs=None
+#         )
 
-        return {
-            "answer": answer,
-            "candidates": candidates
-        }
+#         return {
+#             "answer": answer,
+#             "candidates": candidates
+#         }
 
-    except Exception as e:
+#     except Exception as e:
 
-        print("Candidate search error:", e)
+#         print("Candidate search error:", e)
 
-        return {
-            "answer": "Sorry, I couldn't retrieve candidate information right now.",
-            "candidates": []
-        }
+#         return {
+#             "answer": "Sorry, I couldn't retrieve candidate information right now.",
+#             "candidates": []
+#         }
+
+from langchain.tools import tool
+from vector_db.chroma_client import resume_collection
+from services.embedding_service import generate_embedding
+
+
+@tool
+def search_candidates(query: str):
+    """Search candidates based on skills or role."""
+
+    embedding = generate_embedding(query)
+
+    results = resume_collection.query(
+        query_embeddings=[embedding],
+        n_results=5
+    )
+
+    documents = results.get("documents", [[]])[0]
+    print(documents)
+    return documents

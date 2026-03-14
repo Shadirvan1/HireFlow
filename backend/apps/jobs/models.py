@@ -4,7 +4,19 @@ from django.db import models
 from django.db import models
 from django.contrib.auth import get_user_model
 from apps.accounts.models import CandidateProfile,Company
+import os
+import uuid
 User = get_user_model()
+
+
+def job_application_resume_upload(instance, filename):
+    """
+    Upload path: resumes/user_<user_id>/<uuid>.<ext>
+    """
+    ext = os.path.splitext(filename)[1]  # preserves the file extension
+    user_id = instance.applicant.user.id if instance.applicant and instance.applicant.user else "unknown"
+    return f"resumes/user_{user_id}/{uuid.uuid4()}{ext}"
+
 
 class Job(models.Model):
     company = models.ForeignKey(
@@ -59,7 +71,7 @@ class JobApplication(models.Model):
         related_name="job_applications"
     )
 
-    resume = models.FileField(upload_to="resumes/")
+    resume = models.FileField(upload_to=job_application_resume_upload, blank=True, null=True)
     cover_letter = models.TextField(blank=True, null=True)
 
     status = models.CharField(

@@ -103,47 +103,87 @@ import requests
 import os 
 FASTAPI_URL=os.getenv("FASTAPI_URL")
 import requests
+from .models import JobApplication
 
-
-
-
+from .serializers import AllJobsRankSerializer # Import your new serializer
 
 class GetALLJobsRank(APIView):
     def get(self, request, version):
-        user = request.user 
-        
+        user = request.user
         try:
             company = user.hr_profile.company
-            company_id = str(company.id) # Capture the company ID
+            company_id = str(company.id)
         except AttributeError:
             return Response({"error": "HR Profile or Company not found"}, status=status.HTTP_404_NOT_FOUND)
 
         jobs = Job.objects.filter(
-            company=company, 
-            is_active=True, 
-            is_approve=True, 
-            embedd_id__isnull=False
+            company=company, is_active=True, is_approve=True, embedd_id__isnull=False
         )
-        
-        job_ids = [job.embedd_id for job in jobs]
-        
+        job_map = {job.embedd_id: job for job in jobs}
+        job_ids = list(job_map.keys())
+
         if not job_ids:
             return Response({"jobs": [], "message": "No valid jobs found"}, status=status.HTTP_200_OK)
 
         try:
+            # 1. Fetch from AI Service
             fastapi_url = f"{FASTAPI_URL}/rank-batch"
-            # Send both job_ids AND company_id for security
-            payload = {
-                "job_ids": job_ids,
-                "company_id": company_id 
-            }
-
-            response = requests.post(fastapi_url, json=payload, timeout=10)
-            print(response)
+            response = requests.post(fastapi_url, json={"job_ids": job_ids, "company_id": company_id}, timeout=10)
             
-            if response.status_code == 200:
-                return Response({"jobs": response.json()}, status=status.HTTP_200_OK)
-            return Response({"error": "Ranking error"}, status=response.status_code)
-                
-        except requests.exceptions.RequestException:
-            return Response({"error": "Ranking server unreachable"}, status=503)
+            if response.status_code != 200:
+                return Response({"error": "AI ranking service error"}, status=status.HTTP_502_BAD_GATEWAY)
+
+            ranked_data = response.json()
+
+            # 2. Batch fetch Database relations
+            application_ids = []
+            for job_res in ranked_data.get("results", []):
+                for cand in job_res.get("results", []):
+                    application_ids.append(int(cand["application_id"]))
+
+            applications = JobApplication.objects.prefetch_related("applicant__user").filter(id__in=application_ids)
+            app_map = {app.id: app for app in applications}
+
+            # 3. Structure data for Serializer
+            formatted_jobs_list = []
+            for job_result in ranked_data.get("results", []):
+                job_id = job_result.get("job_id")
+                job = job_map.get(job_id)
+                if not job: continue
+
+                candidates_list = []
+                for cand in job_result.get("results", []):
+                    app = app_map.get(int(cand["application_id"]))
+                    if not app: continue
+                    
+                    candidates_list.append({
+                        "application_id": app.id,
+                        "applicant_id": app.applicant.id,
+                        "applicant_name": app.applicant.user.username,
+                        "email": app.applicant.user.email,
+                        "vector_score": cand.get("vector_score"),
+                        "llm_score": cand.get("llm_score")
+                    })
+
+                formatted_jobs_list.append({
+                    "job_id": job.id,
+                    "job_title": job.title,
+                    "total_candidates": len(candidates_list),
+                    "candidates": candidates_list
+                })
+
+            # 4. Use the Serializer
+            final_data = {
+                "success": True,
+                "total_jobs": len(formatted_jobs_list),
+                "jobs": formatted_jobs_list
+            }
+            serializer = AllJobsRankSerializer(final_data)
+            
+            print(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except requests.exceptions.Timeout:
+            return Response({"error": "AI service timeout"}, status=status.HTTP_504_GATEWAY_TIMEOUT)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

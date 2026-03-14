@@ -1,159 +1,158 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Mail, 
-  FileText, 
-  ExternalLink, 
-  CheckCircle, 
-  XCircle, 
-  Clock,
-  Search,
-  Filter,
-  Download
-} from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import api from "../../api/api";
 
-export default function HRApplications() {
-  const [applications, setApplications] = useState([]);
-  const [filter, setFilter] = useState('All');
+const UserRanking = () => {
+  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState([]);
+  const [error, setError] = useState(null);
 
-  // Mock data - replace with your api.get('jobs/hr/get/applications/')
   useEffect(() => {
-    const mockData = [
-      { id: 1, name: "Arjun Mehta", email: "arjun@example.com", role: "Frontend Developer", status: "Pending", date: "2024-03-20" },
-      { id: 2, name: "Sara Khan", email: "sara.k@example.com", role: "UI/UX Designer", status: "Shortlisted", date: "2024-03-18" },
-      { id: 3, name: "Priya Das", email: "priya@example.com", role: "Backend Engineer", status: "Rejected", date: "2024-03-15" },
-    ];
-    setApplications(mockData);
+    const fetchRankings = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get("/jobs/job/rankings/");
+        // Based on your backend log, the data is in response.data.jobs
+        setJobs(response.data.jobs || []);
+      } catch (err) {
+        console.error("Failed to fetch rankings:", err);
+        setError("Could not load rankings. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRankings();
   }, []);
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'Shortlisted': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
-      case 'Rejected': return 'bg-rose-50 text-rose-600 border-rose-100';
-      default: return 'bg-amber-50 text-amber-600 border-amber-100';
-    }
-  };
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="text-center mt-10 text-red-500 font-medium">{error}</div>
+    );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-10 font-sans">
-      <div className="max-w-7xl mx-auto">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Incoming Applications</h1>
-            <p className="text-slate-500 font-medium">Review and manage candidates applying to your roles</p>
-          </div>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 transition-all">
-            <Download size={18} /> Export CSV
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <header className="mb-10 text-center">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            AI Talent <span className="text-indigo-600">Leaderboard</span>
+          </h1>
+          <p className="mt-2 text-lg text-gray-600">
+            Ranked candidates based on AI vector similarity and LLM evaluation.
+          </p>
+        </header>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {[
-            { label: 'Total Received', count: '124', icon: <FileText className="text-blue-500"/> },
-            { label: 'Shortlisted', count: '12', icon: <CheckCircle className="text-emerald-500"/> },
-            { label: 'Pending Review', count: '48', icon: <Clock className="text-amber-500"/> },
-          ].map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <p className="text-2xl font-black text-slate-900">{stat.count}</p>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl">{stat.icon}</div>
+        {jobs.map((job) => (
+          <div
+            key={job.job_id}
+            className="mb-12 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            {/* Job Header */}
+            <div className="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white uppercase tracking-wider">
+                {job.job_title}
+              </h2>
+              <span className="bg-indigo-400 text-white text-xs font-bold px-3 py-1 rounded-full uppercase">
+                {job.total_candidates} Applicants
+              </span>
             </div>
-          ))}
-        </div>
 
-        {/* Filter & Search Bar */}
-        <div className="bg-white border border-slate-200 rounded-t-[2rem] p-6 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search by name or role..." 
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 transition-all"
-            />
-          </div>
-          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-            {['All', 'Pending', 'Shortlisted', 'Rejected'].map((s) => (
-              <button 
-                key={s}
-                onClick={() => setFilter(s)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  filter === s ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Applications Table */}
-        <div className="bg-white border border-slate-200 border-t-0 rounded-b-[2rem] overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidate</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Applied Role</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {applications.map((app) => (
-                  <tr key={app.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm">
-                          {app.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">{app.name}</p>
-                          <p className="text-xs text-slate-400 flex items-center gap-1"><Mail size={12}/> {app.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <p className="text-sm font-bold text-slate-700">{app.role}</p>
-                      <p className="text-[10px] text-slate-400 font-medium">{app.date}</p>
-                    </td>
-                    <td className="px-8 py-5">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusStyle(app.status)}`}>
-                        {app.status}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex justify-end gap-2">
-                        <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="View Profile">
-                          <ExternalLink size={18} />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all" title="Shortlist">
-                          <CheckCircle size={18} />
-                        </button>
-                        <button className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Reject">
-                          <XCircle size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="p-6 border-t border-slate-100 flex justify-between items-center bg-slate-50/30">
-            <p className="text-xs text-slate-400 font-medium">Showing 1 to 10 of 124 applications</p>
-            <div className="flex gap-2">
-              <button className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600">Previous</button>
-              <button className="px-4 py-2 text-xs font-bold bg-white border border-slate-200 rounded-lg shadow-sm">Next</button>
+            {/* Table Area */}
+            <div className="overflow-x-auto">
+              {job.candidates.length > 0 ? (
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Rank
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Candidate
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Vector Score
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {job.candidates.map((candidate, index) => (
+                      <tr
+                        key={candidate.application_id}
+                        className="hover:bg-indigo-50/50 transition-colors"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            {index === 0 ? (
+                              <span className="flex items-center justify-center h-8 w-8 rounded-full bg-yellow-100 text-yellow-600 font-bold shadow-sm">
+                                🥇
+                              </span>
+                            ) : index === 1 ? (
+                              <span className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-500 font-bold shadow-sm">
+                                🥈
+                              </span>
+                            ) : (
+                              <span className="text-gray-500 font-medium pl-3">
+                                #{index + 1}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-900 capitalize">
+                            {candidate.applicant_name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {candidate.email}
+                          </div>
+                        </td>
+                        {/* ... inside your map function ... */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <span className="text-sm font-bold text-indigo-600 mr-2">
+                              
+                              {candidate.llm_score !== null &&
+                              candidate.llm_score !== undefined
+                                ? `${candidate.llm_score}% `
+                                : `${candidate.vector_score}% `}
+                            </span>
+                            <div className="w-24 bg-gray-200 rounded-full h-1.5">
+                              <div
+                                className={`h-1.5 rounded-full ${candidate.llm_score ? "bg-emerald-500" : "bg-indigo-500"}`}
+                                style={{
+                                  width: `${candidate.llm_score ?? candidate.vector_score}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <button className="text-indigo-600 hover:text-indigo-900 font-bold border border-indigo-600 px-4 py-1 rounded-lg hover:bg-indigo-50 transition-all">
+                            Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="py-10 text-center text-gray-400 italic">
+                  No candidates ranked for this position yet.
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
-}
+};
+
+export default UserRanking;

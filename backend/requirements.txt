@@ -23,4 +23,6 @@ celery
 redis
 django-celery-beat
 
+pip install 
+django-storages[boto3] 
 

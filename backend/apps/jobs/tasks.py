@@ -7,9 +7,9 @@ from .models import Job
 @shared_task
 def send_daily_job_notifications():
 
-    jobs = Job.objects.filter(is_approve=True).order_status('-created_at')[:5]
+
     jobs = Job.objects.filter(is_approve=True).order_by('-id')[:5]
-    for candidate in CandidateProfile.objects.all():
+    for candidate in CandidateProfile.objects.filter(is_active=True,):
 
         job_rows = ""
         for job in jobs:

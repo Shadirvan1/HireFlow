@@ -145,7 +145,7 @@ class CandidateProfile(models.Model):
 
     notice_period_days = models.IntegerField(default=0)
     profile_image = models.ImageField(upload_to=candidate_profile_image_upload, blank=True, null=True)
-
+    is_active = models.BooleanField(default=True)
     portfolio_url = models.URLField(blank=True, null=True)
     linkedin_url = models.URLField(blank=True, null=True)
     github_url = models.URLField(blank=True, null=True)

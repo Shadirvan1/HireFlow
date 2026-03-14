@@ -52,3 +52,24 @@ class JobApplicationSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You have already applied for this position.")
         
         return data
+
+from rest_framework import serializers
+
+class CandidateRankSerializer(serializers.Serializer):
+    application_id = serializers.IntegerField()
+    applicant_id = serializers.IntegerField()
+    applicant_name = serializers.CharField()
+    email = serializers.EmailField()
+    vector_score = serializers.FloatField(required=False, allow_null=True)
+    llm_score = serializers.FloatField(required=False, allow_null=True)
+
+class JobRankResponseSerializer(serializers.Serializer):
+    job_id = serializers.IntegerField()
+    job_title = serializers.CharField()
+    total_candidates = serializers.IntegerField()
+    candidates = CandidateRankSerializer(many=True)
+
+class AllJobsRankSerializer(serializers.Serializer):
+    success = serializers.BooleanField(default=True)
+    total_jobs = serializers.IntegerField()
+    jobs = JobRankResponseSerializer(many=True)
