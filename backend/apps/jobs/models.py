@@ -19,6 +19,13 @@ def job_application_resume_upload(instance, filename):
 
 
 class Job(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+    )
+
     company = models.ForeignKey(
         Company,
         on_delete=models.CASCADE,
@@ -27,7 +34,7 @@ class Job(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    requirements = models.TextField()
+    requirements = models.TextField(blank=True, null=True)
     responsibilities = models.TextField(blank=True, null=True)
     embedd_id = models.CharField(blank=True,null=True)
 
@@ -51,6 +58,8 @@ class Job(models.Model):
 
     is_active = models.BooleanField(default=True)
     is_approve = models.BooleanField(default=False)
+    is_automatic = models.BooleanField(default=False)
+    ats_ascore = models.FloatField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -77,13 +86,17 @@ class JobApplication(models.Model):
     status = models.CharField(
         max_length=50,
         choices=[
-            ("PENDING", "Pending"),
+            ("SCHEDULED", "Scheduled"),
+            ("APPLIED", "Applied"),
             ("SHORTLISTED", "Shortlisted"),
             ("REJECTED", "Rejected"),
             ("HIRED", "Hired"),
         ],
-        default="PENDING"
+        default="APPLIED"
     )
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    meeting_link = models.URLField(null=True, blank=True)
+    interviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     applied_at = models.DateTimeField(auto_now_add=True)
 

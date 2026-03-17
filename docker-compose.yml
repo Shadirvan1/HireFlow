@@ -230,3 +230,4 @@ volumes:
   chroma_data:
   mongodb_data:
   dynamodb_data:
+  n8n_data:

@@ -147,6 +147,7 @@ async def rank_batch(data: dict):
 
         # Remove empty results
         results = [r for r in results if r]
+        print(results)
 
         return {
             "company_id": company_id,

@@ -1,23 +1,29 @@
 # jobs/signals.py
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import Job
+from django.conf import settings  # <--- Add this
 import requests
 import os 
+from .models import Job, JobApplication
 from lambda_push.notification_service import send_notification
 from apps.accounts.models import HRProfile
 
 FASTAPI_URL = os.getenv("FASTAPI_URL")
+
+# Define the common headers here
+def get_auth_headers():
+    return {
+        "X-API-KEY": settings.SECRET_KEY,
+        # Note: Do NOT add 'Content-Type' here if you are sending 'files=' 
+        # because requests adds the boundary automatically.
+    }
+
 @receiver(post_save, sender=Job)
 def auto_approve_job(sender, instance: Job, created, **kwargs):
     hr_profile = HRProfile.objects.filter(company=instance.company).first()
     company_user = hr_profile.user if hr_profile else None
     
-    
-    print("this is activated")
-
     if created:
-
         company_id = str(instance.company.id) if hasattr(instance, 'company') else "unknown"
 
         payload = {
@@ -36,92 +42,78 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
         }
 
         try:
-
+            # --- ADDED HEADERS HERE ---
             response = requests.post(
                 f"{FASTAPI_URL}/process-job",
                 json=payload,
-                timeout=10
+                headers=get_auth_headers(), 
+                timeout=30
             )
-
             response.raise_for_status()
-
             result = response.json()
 
-            print(result)
-
             if result.get("trusted"):
-
                 instance.is_approve = True
                 instance.embedd_id = result.get("embedd_id")
-
                 instance.save(update_fields=["is_approve", "embedd_id"])
+                
                 send_notification(
                     user=company_user,
                     title="Job Approved ✅",
                     body="Your job application was posted successfully.",
-                    data={
-                        "type": "job_approved",
-                        "job_id": str(instance.id)
-                    }
+                    data={"type": "job_approved", "job_id": str(instance.id)}
                 )
-
-                print("completed")
             else:
-
                 send_notification(
                     user=company_user,
                     title="Job Rejected ❌",
-                    body="AI rejected your job post due to policy or content issues.",
-                    data={
-                        "type": "job_rejected",
-                        "job_id": str(instance.id)
-                    }
+                    body="AI rejected your job post.",
+                    data={"type": "job_rejected", "job_id": str(instance.id)}
                 )
-
 
         except Exception as e:
             print(f"LLM verification failed for Job {instance.id}: {e}")
 
-from .models import JobApplication
-
-
 @receiver(post_save, sender=JobApplication)
 def send_resume_for_ranking(sender, instance, created, **kwargs):
-    """
-    When a candidate applies, send their resume and the 
-    Job's existing ChromaDB ID to FastAPI for embedding and ranking.
-    """
+    print(f"Processing resume for application {instance.id}")
     if created and instance.resume:
-        # We need the embedd_id from the related Job model
-        job_embedding_id = instance.job.embedd_id 
+        job = instance.job
+        print(job.user.email)
+        print(f"Job {job.id} has embedd_id: {job.embedd_id}")
         
-        # Get company_id from the related job
-        company_id = str(instance.job.company.id) if hasattr(instance.job, 'company') else "unknown"
-        
-        if not job_embedding_id:
-            print(f"Skipping: Job {instance.job.id} has no embedding ID yet.")
+        if not job.embedd_id:
+            print(f"Job {job.id} does not have an embedding ID. Skipping AI processing.")
             return
-
-        # Prepare the file and data
-        files = {'file': instance.resume.open('rb')}
+        print(f"Preparing to send resume for application {instance.id} to AI service...")
+        print(instance.applicant.user.email)
+        candidate_email = instance.applicant.user.email if instance.applicant and instance.applicant.user else "unknown"
+        print(f"Candidate email: {candidate_email}")
+        interviewer_email = job.user.email if job.user else "admin@company.com"
         data = {
-            "applicant_id": str(instance.applicant.id),
-            "job_embedding_id": job_embedding_id, # Link resume to this specific job
+
             "application_id": str(instance.id),
-            "company_id": company_id
-            
-
+            "job_embedding_id": job.embedd_id,
+            "company_id": str(job.company.id) if job.company else "unknown",
+            "is_automatic": str(job.is_automatic),
+            "ats_score_threshold": str(job.ats_ascore),
+            "job_title": job.title,
+            "candidate_email": candidate_email,
+            "hr_email": interviewer_email
         }
-
+        print(f"Data prepared for AI service: {data}")
+        files = {'file': instance.resume.open('rb')}
+        print(f"File {instance.resume.name} opened for reading.")
         try:
-            # Note: Using files= sends this as multipart/form-data
+            print(f"Sending request to AI service for application {instance.id}")
             response = requests.post(
                 f"{FASTAPI_URL}/process-resume", 
                 files=files, 
                 data=data, 
-                timeout=10
+                headers=get_auth_headers(),
+                timeout=15 
             )
             response.raise_for_status()
-            print(f"Resume for application {instance.id} sent successfully.")
+            print(f"✅ App {instance.id} sent with Auth Header.")
         except Exception as e:
-            print(f"Failed to send resume to FastAPI: {e}")
+            print(f"❌ Signal Error: {e}")

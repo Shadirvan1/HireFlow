@@ -8,5 +8,6 @@ urlpatterns = [
     path("get/job/<int:id>/",views.GetJobByIdview.as_view()),
     path("job/apply/<int:id>/",views.ApplyJobView.as_view()),
     path("job/ranking/<int:id>/",views.GetALLJobsRank.as_view()),
-    path("job/rankings/",views.GetALLJobsRank.as_view()),
+    path("job/rankings/",views.GetALLJobsRank.as_view()), 
+    path("application/update-status/",views.ApplicationStatusView.as_view()), 
 ]
