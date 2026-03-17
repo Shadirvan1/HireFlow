@@ -144,16 +144,16 @@ class GetALLJobsRank(APIView):
             print("Sending request to AI service...")
             # 1. Fetch from AI Service
             fastapi_url = f"{FASTAPI_URL}/rank-batch"
+            print(job_ids, company_id  )
             response = requests.post(
                 fastapi_url, 
                 json={"job_ids": job_ids, "company_id": company_id}, 
                 headers=auth_headers, 
                 timeout=10
             )
-            print(response)
             
             print("AI service response received")
-            # Rest of your logic remains the same...
+            
             if response.status_code != 200:
                 return Response({"error": "AI ranking service error"}, status=status.HTTP_502_BAD_GATEWAY)
 
@@ -218,12 +218,12 @@ class GetALLJobsRank(APIView):
 class ApplicationStatusView(APIView):
     permission_classes = []
 
-    def post(self, request):
+    def post(self, request, version):
         print("Application status callback received from n8n")
         
         # 1. Security Check
         callback_key = request.headers.get('X-CALLBACK-KEY')
-        if callback_key != settings.DJANGO_CALLBACK_KEY:
+        if callback_key != settings.SECRET_KEY:
             return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
         # 2. Validation

@@ -23,6 +23,8 @@ celery
 redis
 django-celery-beat
 
-pip install 
 django-storages[boto3] 
 
+channels 
+channels-redis 
+daphne

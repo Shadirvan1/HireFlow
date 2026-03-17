@@ -78,19 +78,23 @@ services:
   # =============================
   # 4️⃣ BACKEND DJANGO
   # =============================
+# =============================
+  # 4️⃣ BACKEND DJANGO (Daphne for ASGI)
+  # =============================
   backend:
     container_name: django_backend
     restart: always
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
+    command: daphne -b 0.0.0.0 -p 8000 hireflow_main.asgi:application
     volumes:
       - ./backend:/app
     depends_on:
       - db
       - redis
       - minio
+      - dynamodb  # Added this since your chat now uses DynamoDB
       - backend_celery_worker
       - backend_celery_beat
     env_file:

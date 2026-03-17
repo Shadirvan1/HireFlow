@@ -101,6 +101,7 @@ def send_resume_for_ranking(sender, instance, created, **kwargs):
             "candidate_email": candidate_email,
             "hr_email": interviewer_email
         }
+        print(interviewer_email)
         print(f"Data prepared for AI service: {data}")
         files = {'file': instance.resume.open('rb')}
         print(f"File {instance.resume.name} opened for reading.")

@@ -1,36 +1,36 @@
-# from django.db.models import Q
-# from rest_framework.views import APIView
-# from rest_framework.response import Response
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework import status
+from django.db.models import Q
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 
-# from .models import Message
-# from .serializer import MessageSerializer
+from .models import Message
+from .serializer import MessageSerializer
 
 
-# class ChatHistoryView(APIView):
-#     permission_classes = [IsAuthenticated]
+class ChatHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
 
-#     def get(self, request, other_user_id):
-#         user = request.user
+    def get(self, request, other_user_id):
+        user = request.user
         
 
         
-#         current_user_id = request.user.id
+        current_user_id = request.user.id
 
-#         if not current_user_id:
-#             return Response(
-#                 {"error": "Authentication required"},
-#                 status=status.HTTP_401_UNAUTHORIZED
-#             )
+        if not current_user_id:
+            return Response(
+                {"error": "Authentication required"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
 
-#         messages = Message.objects.filter(
-#             (Q(sender_id=current_user_id) & Q(receiver_id=other_user_id)) |
-#             (Q(sender_id=other_user_id) & Q(receiver_id=current_user_id))
-#         ).order_by("timestamp")
+        messages = Message.objects.filter(
+            (Q(sender_id=current_user_id) & Q(receiver_id=other_user_id)) |
+            (Q(sender_id=other_user_id) & Q(receiver_id=current_user_id))
+        ).order_by("timestamp")
 
-#         serializer = MessageSerializer(messages, many=True)
+        serializer = MessageSerializer(messages, many=True)
         
 
-#         return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
    

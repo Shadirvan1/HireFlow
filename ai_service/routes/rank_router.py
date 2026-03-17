@@ -126,6 +126,7 @@ import asyncio
 from utilities.ranking_utility import perform_ranking_logic
 @router.post("/rank-batch")
 async def rank_batch(data: dict):
+    print("Received batch ranking request:", data)
 
     job_ids = data.get("job_ids")
     company_id = data.get("company_id")
@@ -147,8 +148,8 @@ async def rank_batch(data: dict):
 
         # Remove empty results
         results = [r for r in results if r]
-        print(results)
-
+        print(f"Batch ranking completed. Total jobs processed: {len(results)}")
+        print(company_id, job_ids,results)
         return {
             "company_id": company_id,
             "total_jobs": len(job_ids),

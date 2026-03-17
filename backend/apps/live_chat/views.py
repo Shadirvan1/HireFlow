@@ -7,7 +7,7 @@ from django.conf import settings
 
 from .serializers import AIChatSerializer
 from apps.accounts.models import Company
-
+from rest_framework.permissions import IsAuthenticated
 
 from dynamodb.services.ai_chat_history import save_chat_history, get_chat_history
 
@@ -71,7 +71,6 @@ class AIChatView(APIView):
 
             ai_content = response.json()
 
-            # Store in DynamoDB
             save_chat_history(
                 user_id=str(user.id),
                 message=serializer.validated_data["message"],
@@ -83,3 +82,15 @@ class AIChatView(APIView):
             
         except requests.exceptions.RequestException as e:
             return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+from dynamodb.services.live_chat_history import get_chat_history
+class ChatHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, other_user_id):
+        ids = sorted([int(request.user.id), int(other_user_id)])
+        room_name = f"private_{ids[0]}_{ids[1]}"
+        
+        # Fetch from DynamoDB
+        messages = get_chat_history(room_name)
+        return Response(messages, status=200)

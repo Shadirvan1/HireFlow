@@ -19,7 +19,7 @@ COPY requirements.txt .
 
 # Use a high timeout and an extra retry to beat the connection issues
 RUN pip install --upgrade pip && \
-    pip install --default-timeout=1000 --no-cache-dir -r requirements.txt --retries 10
+    pip install --default-timeout=2000 --no-cache-dir -r requirements.txt --retries 10
 
 # Now copy the rest of your code
 COPY . .
