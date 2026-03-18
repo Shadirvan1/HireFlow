@@ -90,6 +90,7 @@ class CandidateRankSerializer(serializers.Serializer):
     applicant_id = serializers.IntegerField()
     applicant_name = serializers.CharField()
     email = serializers.EmailField()
+    status = serializers.CharField()
     vector_score = serializers.FloatField(required=False, allow_null=True)
     llm_score = serializers.FloatField(required=False, allow_null=True)
 

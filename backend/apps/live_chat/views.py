@@ -84,11 +84,12 @@ class AIChatView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 from dynamodb.services.live_chat_history import get_chat_history
+
 class ChatHistoryView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, other_user_id):
-        ids = sorted([int(request.user.id), int(other_user_id)])
+    def get(self, request, version, pk=None):
+        ids = sorted([int(request.user.id), int(pk)])
         room_name = f"private_{ids[0]}_{ids[1]}"
         
         # Fetch from DynamoDB

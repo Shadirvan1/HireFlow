@@ -6,6 +6,8 @@ from rest_framework import status
 from .models import Job
 from apps.accounts.models import HRProfile
 from django.conf import settings
+import os
+FASTAPI_URL=os.getenv("FASTAPI_URL")
 # Create your views here.
 
 class CreateJobView(APIView):
@@ -107,7 +109,7 @@ class ApplyJobView(APIView):
     
 import requests
 import os 
-FASTAPI_URL=os.getenv("FASTAPI_URL")
+
 import requests
 from .models import JobApplication
 
@@ -142,11 +144,17 @@ class GetALLJobsRank(APIView):
                 "Content-Type": "application/json"
             }
             print("Sending request to AI service...")
+
             # 1. Fetch from AI Service
             fastapi_url = f"{FASTAPI_URL}/rank-batch"
+            print("==== DEBUG START ====")
+            print("URL:", fastapi_url)
+            print("Payload:", {"job_ids": job_ids, "company_id": company_id})
+            print("Headers:", auth_headers)
+            print("==== CALLING FASTAPI ====")
             print(job_ids, company_id  )
             response = requests.post(
-                fastapi_url, 
+                "http://ai_service:8002/api/ai/rank-batch", 
                 json={"job_ids": job_ids, "company_id": company_id}, 
                 headers=auth_headers, 
                 timeout=10
@@ -182,7 +190,10 @@ class GetALLJobsRank(APIView):
                 candidates_list = []
                 for cand in job_result.get("results", []):
                     app = app_map.get(int(cand["application_id"]))
+                    print(app)
                     if not app: continue
+                    print(app)
+                    print("status ====== ",app.status)
                     
                     candidates_list.append({
                         "application_id": app.id,

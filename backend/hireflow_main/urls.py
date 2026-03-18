@@ -34,5 +34,6 @@ urlpatterns = [
     path('api/<str:version>/jobs/', include("apps.jobs.urls")),
     path('api/<str:version>/admin/', include("admin_apps.hr_manage.urls")),
     path('api/<str:version>/ai/', include("apps.live_chat.urls")),
+    path('api/<str:version>/chat/', include("apps.live_chat.urls")),
     
 ]

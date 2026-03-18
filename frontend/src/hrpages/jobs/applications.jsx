@@ -5,7 +5,7 @@ const UserRanking = () => {
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState([]);
   const [error, setError] = useState(null);
-
+console.log(jobs)
   useEffect(() => {
     const fetchRankings = async () => {
       try {

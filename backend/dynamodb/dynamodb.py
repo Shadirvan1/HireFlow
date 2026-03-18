@@ -29,3 +29,4 @@ def create_history_table():
 
 if __name__ == "__main__":
     create_history_table()
+    

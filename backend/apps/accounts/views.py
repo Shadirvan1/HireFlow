@@ -269,16 +269,7 @@ class Me(views.APIView):
     def get(self, request,version):
         initialize_firebase()
         user = request.user
-        send_notification(
-            user=user,
-            title="User Refreshed",
-            body="This is a test push from Django backend",
-            data={
-                "type": "test",
-                "user_id": str(user.id)
-            }
-        )
-        print("notification triggered")
+        
        
 
 

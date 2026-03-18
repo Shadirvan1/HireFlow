@@ -67,7 +67,7 @@ function App() {
 
           {/* ---- hr pages ---- */}
           
-          <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR']}><HROutlet /></ProtectedRoute>} >
+          <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR',"INTERVIEWER"]}><HROutlet /></ProtectedRoute>} >
           <Route path="dashboard" element={<HrDashboard />} />
           <Route path="jobs" element={<HRJobs />} />
           <Route path="create-job" element={<CreateJob />} />
