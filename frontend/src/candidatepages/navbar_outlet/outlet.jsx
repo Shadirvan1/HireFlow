@@ -26,7 +26,7 @@ export default function CandidateOutlet() {
       {/* Optional: Simple Footer */}
       <footer className="bg-white border-t border-gray-200 py-4">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-          © 2026 HireMe Job Portal. All rights reserved.
+          © 2026 Hire Flow Job Portal. All rights reserved.
         </div>
       </footer>
     </div>

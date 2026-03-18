@@ -267,7 +267,6 @@ class Me(views.APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request,version):
-        initialize_firebase()
         user = request.user
         
        

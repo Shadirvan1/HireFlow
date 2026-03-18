@@ -42,6 +42,7 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
         }
 
         try:
+            print(FASTAPI_URL)
             # --- ADDED HEADERS HERE ---
             response = requests.post(
                 f"{FASTAPI_URL}/process-job",

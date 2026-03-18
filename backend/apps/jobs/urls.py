@@ -10,4 +10,7 @@ urlpatterns = [
     path("job/ranking/<int:id>/",views.GetALLJobsRank.as_view()),
     path("job/rankings/",views.GetALLJobsRank.as_view()), 
     path("application/update-status/",views.ApplicationStatusView.as_view()), 
+    path("job/save/<int:pk>/",views.ToggleSaveJobView.as_view()), 
+    path('get/saved/', views.GetSavedJobsView.as_view(), name='saved-jobs'),
+    path('my-applications/', views.MyApplicationsListView.as_view(), name='my-applications-list'),
 ]

@@ -7,8 +7,17 @@ from .models import Job
 from apps.accounts.models import HRProfile
 from django.conf import settings
 import os
+from datetime import timedelta
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
+from django.utils import timezone
 FASTAPI_URL=os.getenv("FASTAPI_URL")
 # Create your views here.
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10  # You can change this to 5, 20, etc.
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class CreateJobView(APIView):
     serializer_class = JobSerializer
@@ -45,12 +54,97 @@ class CompanyActivityView(APIView):
         job.delete()
         return Response({"message":"Delete job"},status=status.HTTP_200_OK)
 
-class GetAllJobsView(APIView):
-    def get(self,request,version):
-        jobs = Job.objects.filter(is_approve = True,is_active = True)
+class GetSavedJobsView(APIView):
+    # Use the default pagination or a custom one
+    pagination_class = PageNumberPagination
+
+    def get(self, request, version):
+        # 1. Get the SavedJob instances
+        saved_instances = SavedJob.objects.filter(
+            user=request.user
+        ).select_related('job', 'job__company').order_by('-created_at') # Order by most recently saved
         
-        serializer = JobSerializer(jobs,many=True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        # 2. Extract Job QuerySet (Stay in QuerySet land for pagination to work)
+        # We use .values_list or just filter Job directly for better performance:
+        job_ids = saved_instances.values_list('job_id', flat=True)
+        jobs = Job.objects.filter(id__in=job_ids).select_related('company')
+
+        # 3. Initialize Paginator
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(jobs, request)
+        
+        if page is not None:
+            serializer = JobSerializer(page, many=True, context={'request': request})
+            return paginator.get_paginated_response(serializer.data)
+
+        # Fallback if pagination is disabled
+        serializer = JobSerializer(jobs, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
+from django.utils import timezone
+from datetime import timedelta
+from .models import Job
+from .serializers import JobSerializer
+
+
+class GetAllJobsView(APIView):
+    pagination_class = PageNumberPagination
+
+    def get(self, request, version):
+        # Base Query
+        jobs = Job.objects.filter(is_approve=True, is_active=True).select_related('company')
+
+        # --- 1. SEARCH LOGIC ---
+        search_query = request.query_params.get('search')
+        if search_query:
+            jobs = jobs.filter(
+                Q(title__icontains=search_query) | 
+                Q(description__icontains=search_query) |
+                Q(company__name__icontains=search_query)
+            )
+
+        # --- 2. LOCATION LOGIC ---
+        location_query = request.query_params.get('location')
+        if location_query:
+            jobs = jobs.filter(location__icontains=location_query)
+
+        # --- 3. DATE POSTED FILTER (Freshness) ---
+        date_posted = request.query_params.get('date_posted')
+        if date_posted and date_posted != 'all':
+            today = timezone.now().date()
+            if date_posted == 'today':
+                jobs = jobs.filter(created_at__date=today)
+            elif date_posted == 'week':
+                jobs = jobs.filter(created_at__gte=timezone.now() - timedelta(days=7))
+            elif date_posted == 'month':
+                jobs = jobs.filter(created_at__gte=timezone.now() - timedelta(days=30))
+
+        # --- 4. NEW: SORTING LOGIC ---
+        # Default to newest (-created_at) if not specified
+        sort_by = request.query_params.get('ordering', '-created_at')
+        if sort_by in ['created_at', '-created_at']:
+            jobs = jobs.order_by(sort_by)
+        else:
+            jobs = jobs.order_by('-created_at')
+
+        # --- 5. PAGINATION ---
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(jobs, request)
+        
+        if page is not None:
+            serializer = JobSerializer(page, many=True, context={'request': request})
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = JobSerializer(jobs, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 
 from apps.accounts.models import Company
 from .serializers import JobApplySerializer
@@ -154,7 +248,7 @@ class GetALLJobsRank(APIView):
             print("==== CALLING FASTAPI ====")
             print(job_ids, company_id  )
             response = requests.post(
-                "http://ai_service:8002/api/ai/rank-batch", 
+                fastapi_url, 
                 json={"job_ids": job_ids, "company_id": company_id}, 
                 headers=auth_headers, 
                 timeout=10
@@ -266,3 +360,42 @@ class ApplicationStatusView(APIView):
                 return Response({"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from .models import SavedJob
+class ToggleSaveJobView(APIView):
+    def post(self, request, version, pk):
+        job = Job.objects.get(id=pk) 
+        saved_job, created = SavedJob.objects.get_or_create(user=request.user, job=job)
+        
+        if not created:
+            saved_job.delete()
+            return Response({"message": "Job removed from saved list", "saved": False})
+        
+        return Response({"message": "Job saved successfully", "saved": True})
+
+from rest_framework import generics, permissions
+from .models import JobApplication
+from .serializers import JobApplicationReadSerializer
+
+
+class MyApplicationsListView(generics.ListAPIView):
+    serializer_class = JobApplicationReadSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination  # <--- Added Pagination
+
+    def get_queryset(self):
+        """
+        Return applications for the current logged-in candidate.
+        """
+        user = self.request.user
+        
+        try:
+            # We filter by candidate_profile and optimize with select_related
+            return JobApplication.objects.filter(
+                applicant=user.candidate_profile
+            ).select_related(
+                'job', 
+                'job__company'
+            ).order_by('-applied_at')
+        except AttributeError:
+            # Returns an empty queryset if the user has no candidate_profile
+            return JobApplication.objects.none()

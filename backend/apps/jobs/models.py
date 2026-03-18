@@ -1,20 +1,25 @@
-from django.db import models
-
-# Create your models here.
-from django.db import models
-from django.contrib.auth import get_user_model
-from apps.accounts.models import CandidateProfile,Company
 import os
 import uuid
-User = get_user_model()
+from django.db import models
+from django.contrib.auth import get_user_model
+from apps.accounts.models import CandidateProfile, Company
 
+# ✅ Specialized storage for PDFs and Documents
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
+
+User = get_user_model()
 
 def job_application_resume_upload(instance, filename):
     """
-    Upload path: resumes/user_<user_id>/<uuid>.<ext>
+    Cloudinary path: resumes/user_<user_id>/<uuid>
+    Note: Cloudinary usually handles extensions automatically.
     """
-    ext = os.path.splitext(filename)[1]  # preserves the file extension
-    user_id = instance.applicant.user.id if instance.applicant and instance.applicant.user else "unknown"
+    ext = os.path.splitext(filename)[1]
+    user_id = "unknown"
+    if instance.applicant and instance.applicant.user:
+        user_id = instance.applicant.user.id
+        
+    # Return a path that Cloudinary will use as the Public ID
     return f"resumes/user_{user_id}/{uuid.uuid4()}{ext}"
 
 
@@ -36,9 +41,9 @@ class Job(models.Model):
     description = models.TextField()
     requirements = models.TextField(blank=True, null=True)
     responsibilities = models.TextField(blank=True, null=True)
-    embedd_id = models.CharField(blank=True,null=True)
+    embedd_id = models.CharField(max_length=255, blank=True, null=True)
 
-    location = models.CharField(max_length=255,blank=True,null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
     salary_min = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     salary_max = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
@@ -53,7 +58,6 @@ class Job(models.Model):
     )
 
     experience_required = models.IntegerField(default=0)
-
     deadline = models.DateField(blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
@@ -66,6 +70,7 @@ class Job(models.Model):
 
     def __str__(self):
         return self.title
+
 
 class JobApplication(models.Model):
     job = models.ForeignKey(
@@ -80,7 +85,14 @@ class JobApplication(models.Model):
         related_name="job_applications"
     )
 
-    resume = models.FileField(upload_to=job_application_resume_upload, blank=True, null=True)
+    # ✅ Using RawMediaCloudinaryStorage for PDF/Docx files
+    resume = models.FileField(
+        upload_to=job_application_resume_upload, 
+        storage=RawMediaCloudinaryStorage(),
+        blank=True, 
+        null=True
+    )
+    
     cover_letter = models.TextField(blank=True, null=True)
 
     status = models.CharField(
@@ -94,6 +106,7 @@ class JobApplication(models.Model):
         ],
         default="APPLIED"
     )
+    
     scheduled_at = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(null=True, blank=True)
     interviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -105,3 +118,24 @@ class JobApplication(models.Model):
 
     def __str__(self):
         return f"{self.applicant} - {self.job}"
+
+class SavedJob(models.Model):
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name="saved_jobs"
+    )
+    job = models.ForeignKey(
+        Job, 
+        on_delete=models.CASCADE, 
+        related_name="saved_by_users"
+    )
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # Prevent a user from saving the same job multiple times
+        unique_together = ('user', 'job')
+        ordering = ['-saved_at']
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.job.title}"

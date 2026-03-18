@@ -33,6 +33,10 @@ import HRApplications from "./hrpages/jobs/applications";
 import ApplyJob from "./candidatepages/jobs/applyjobs";
 import ChatPage from "./hrpages/chat/mainchatpage";
 import HRNotification from "./hrpages/dashboard/notification";
+import SavedJobs from "./candidatepages/jobs/savedjobs";
+import SingleJob from "./candidatepages/jobs/singlejob";
+import MyApplications from "./candidatepages/jobs/my_jobs";
+
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -58,6 +62,9 @@ function App() {
           {/* ---- candidate pages ---- */}
           <Route path="/candidate" element={<ProtectedRoute allowedRoles={['CANDIDATE']}>< CandidateOutlet /></ProtectedRoute>}>
           <Route path="dashboard" element={<CandidateDashboard />} />
+          <Route path="job/:jobId" element={<SingleJob />} />
+          <Route path="saved-jobs" element={<SavedJobs />} />
+          <Route path="my-applications" element={<MyApplications />} />
           <Route path="profile" element={<CandidateProfileView />} />
           <Route path="profile/edit" element={<CandidateProfile />} />
           <Route path="jobs" element={<FindJobs />} />

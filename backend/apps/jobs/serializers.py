@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import Job
+from .models import Job,SavedJob
 from django.utils import timezone
 from apps.accounts.serializers import CompanySerializer,CandidateProfileSerializer
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
-    
+    is_saved = serializers.SerializerMethodField()
 
     class Meta:
         model = Job
@@ -12,6 +12,12 @@ class JobSerializer(serializers.ModelSerializer):
         read_only_fields = ["company", "created_at", "updated_at"]
 
     # 1. Experience Validation (Already existing, slightly improved)
+    def get_is_saved(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            # Replace 'SavedJob' with your actual model name for saved jobs
+            return SavedJob.objects.filter(user=request.user, job=obj).exists()
+        return False
     def validate_experience_required(self, value):
         if value < 0:
             raise serializers.ValidationError("Experience cannot be negative.")
@@ -113,3 +119,16 @@ class UpdateApplicationStatusSerializer(serializers.Serializer):
         if not JobApplication.objects.filter(id=int(value)).exists():
             raise serializers.ValidationError("Application not found")
         return value
+
+# In your serializers.py
+
+class JobApplicationReadSerializer(serializers.ModelSerializer):
+    # We reuse your existing JobSerializer to get Title, Location, and Company
+    job = JobSerializer(read_only=True) 
+    
+    class Meta:
+        model = JobApplication
+        fields = [
+            'id', 'job', 'resume', 'cover_letter', 
+            'status', 'applied_at', 'scheduled_at', 'meeting_link'
+        ]
