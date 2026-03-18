@@ -92,8 +92,7 @@ class Company(models.Model):
     industry = models.CharField(max_length=255)
     company_size = models.CharField(max_length=100)
     headquarters = models.CharField(max_length=255)
-    
-    # ✅ Cloudinary Image Storage
+
     logo = models.ImageField(
         upload_to=company_logo_upload, 
         storage=MediaCloudinaryStorage(),
@@ -117,7 +116,7 @@ class HRProfile(models.Model):
     ROLE_CHOICES = [('INTERVIEWER', 'INTERVIEWER'), ('HR', 'HR')]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='HR')
     
-    # ✅ Cloudinary Image Storage
+
     profile_image = models.ImageField(
         upload_to=hr_profile_image_upload, 
         storage=MediaCloudinaryStorage(),
@@ -125,7 +124,7 @@ class HRProfile(models.Model):
         null=True
     )
     
-    # ✅ Cloudinary Raw Storage for PDF/Certifications
+
     certifications = models.FileField(
         upload_to=hr_certification_upload, 
         storage=RawMediaCloudinaryStorage(),
@@ -193,6 +192,7 @@ class Invite(models.Model):
         ("admin", "Admin"),
         ("recruiter", "Recruiter"),
     )
+
     email = models.EmailField()
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)

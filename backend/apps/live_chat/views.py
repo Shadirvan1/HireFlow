@@ -10,6 +10,7 @@ from apps.accounts.models import Company
 from rest_framework.permissions import IsAuthenticated
 
 from dynamodb.services.ai_chat_history import save_chat_history, get_chat_history
+from hireflow_main.decorators import role_required
 
 FASTAPI_URL = os.getenv("FASTAPI_URL")
 class AIChatView(APIView):
