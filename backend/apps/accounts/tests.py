@@ -109,7 +109,9 @@ class UtilityModelTests(TestCase):
         otp_entry.save()
         self.assertFalse(otp_entry.is_valid())
 
+
 class BaseTestCase(APITestCase):
+
     def setUp(self):
         self.user = User.objects.create_user(
             email="test@example.com",

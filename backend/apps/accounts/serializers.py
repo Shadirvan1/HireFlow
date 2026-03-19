@@ -7,6 +7,7 @@ from apps.accounts.services.mfa_service import enable_mfa
 from .services.mfa_service import verify_otp
 from .services.mfa_service import disable_mfa
 from django.db.models import Q
+from timezone import timezone
 User = get_user_model()
 
 
@@ -661,3 +662,165 @@ class EnableMFASerializer(serializers.Serializer):
             })
 
         return attrs
+
+from firebase_admin import auth as firebase_auth
+
+
+class FirebaseVerifySerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+
+    def validate_id_token(self, value):
+        try:
+            decoded_token = firebase_auth.verify_id_token(value)
+        except Exception:
+            raise serializers.ValidationError("Invalid Firebase token")
+
+        # Store decoded token for later use
+        self.context["decoded_token"] = decoded_token
+        return value
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        decoded_token = self.context.get("decoded_token")
+
+        phone_number = decoded_token.get("phone_number")
+
+        user.phone_number = phone_number
+        user.is_number_verified = True
+        user.save()
+
+        return user
+
+
+class RegisterViaInviteSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    def validate(self, attrs):
+        token = self.context.get("token")
+
+        invite = Invite.objects.filter(
+            token=token,
+            is_used=False,
+            expires_at__gte=timezone.now()
+        ).first()
+
+        if not invite:
+            raise serializers.ValidationError("Invalid or expired invite")
+
+        # Optional: prevent duplicate email
+        if User.objects.filter(email=attrs["email"]).exists():
+            raise serializers.ValidationError({"email": "Email already exists"})
+
+        # Store invite for use in create()
+        self.context["invite"] = invite
+        return attrs
+
+    def create(self, validated_data):
+        invite = self.context.get("invite")
+
+        username = validated_data["username"]
+        email = validated_data["email"]
+        password = validated_data["password"]
+
+        # Create user
+        user = User.objects.create_user(
+            email=email,
+            password=password,
+            username=username,
+            role="HR" if invite.role == "HR" else "INTERVIEWER",
+            is_hr=True,
+            is_verified=True,
+        )
+
+        # Create HR Profile
+        HRProfile.objects.create(
+            user=user,
+            company=invite.company,
+            role="HR" if invite.role == "HR" else "INTERVIEWER"
+        )
+
+        # Mark invite as used
+        invite.is_used = True
+        invite.save()
+
+        return {
+            "user": user,
+            "company": invite.company.name,
+            "role": invite.role
+        }
+
+
+from rest_framework import serializers
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+
+User = get_user_model()
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    def validate(self, attrs):
+        uid = attrs.get("uid")
+        token = attrs.get("token")
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+        except Exception:
+            raise serializers.ValidationError({"error": "Invalid link"})
+
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            raise serializers.ValidationError({"error": "Token invalid or expired"})
+
+        # Store user for use in save()
+        self.context["user"] = user
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context.get("user")
+        password = self.validated_data.get("password")
+
+        user.set_password(password)
+        user.save()
+
+        return user
+
+
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .utils import send_password_reset_email  # adjust import as needed
+
+User = get_user_model()
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        """
+        We don't raise error if user doesn't exist
+        (security best practice: avoid email enumeration)
+        """
+        try:
+            user = User.objects.get(email=value)
+            self.context["user"] = user
+        except User.DoesNotExist:
+            self.context["user"] = None
+
+        return value
+
+    def save(self, **kwargs):
+        user = self.context.get("user")
+
+        if user:
+            send_password_reset_email(user)
+
+        return True

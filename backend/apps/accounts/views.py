@@ -30,7 +30,13 @@ from .serializers import (
     ResendEmailSerializer,
     GoogleAuthSerializer,
     DisableMFASerializer,
-    EnableMFASerializer
+    EnableMFASerializer,
+    Hrserializer,
+    HRProfileSerializer,
+    FirebaseVerifySerializer,
+    RegisterViaInviteSerializer
+
+
 )
 
 from .utilities import send_verification_email, send_password_reset_email
@@ -318,3 +324,124 @@ class LogoutView(views.APIView):
         response.delete_cookie("refresh_token")
         response.delete_cookie("access_token")
         return response
+
+class ForgotPasswordView(views.APIView):
+    def post(self, request, version):
+        serializer = ForgotPasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "message": "If email exists, reset link sent."
+            })
+
+        return Response(serializer.errors, status=400)
+
+
+class ResetPasswordView(views.APIView):
+    def post(self, request, version):
+        serializer = ResetPasswordSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password reset successful"})
+
+        return Response(serializer.errors, status=400)
+
+
+FRONT_END_URL = os.getenv("FRONT_END_URL")
+class InviteUserView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, version, role):
+
+        role = role.upper()
+
+        if role not in ["HR", "INTERVIEWER"]:
+            return Response({"error": "Invalid role"}, status=400)
+
+       
+        try:
+            company = request.user.hr_profile.company
+        except:
+            return Response({"error": "No company attached"}, status=400)
+
+        invite = Invite.objects.create(
+            company=company,
+            role=role,
+            expires_at=timezone.now() + timedelta(days=3)
+        )
+
+        invite_link = f"{FRONT_END_URL}/register/{invite.token}"
+
+        return Response({
+            "invite_link": invite_link,
+            "role": role
+        }, status=201)
+
+class RegisterViaInviteView(views.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, version, token):
+        serializer = RegisterViaInviteSerializer(
+            data=request.data,
+            context={"token": token}
+        )
+
+        if serializer.is_valid():
+            data = serializer.save()
+            return Response({
+                "message": "Registration successful",
+                "company": data["company"],
+                "role": data["role"]
+            }, status=201)
+
+        return Response(serializer.errors, status=400)
+    
+
+class FirebaseVerifyView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, version):
+        serializer = FirebaseVerifySerializer(
+            data=request.data,
+            context={"request": request}
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Phone verified successfully"})
+
+        return Response(serializer.errors, status=400)
+
+class HRProfileDetailView(views.APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get_object(self, user):
+        try:
+            return HRProfile.objects.get(user=user)
+        except HRProfile.DoesNotExist:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        profile = self.get_object(request.user)
+        if not profile:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = HRProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        profile = self.get_object(request.user)
+        if not profile:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = HRProfileSerializer(profile, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -23,7 +23,6 @@ services:
     image: amazon/dynamodb-local
     container_name: dynamodb_local
     restart: always
-    # FIX: Add this line to resolve the SQLite permission error
     user: root
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data"
     volumes:
@@ -56,28 +55,10 @@ services:
     networks:
       - internal
 
-  # =============================
-  # 3️⃣ MINIO (Object storage)
-  # =============================
-  minio:
-    image: quay.io/minio/minio
-    container_name: minio
-    restart: always
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: admin123
-    volumes:
-      - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    networks:
-      - internal
+ 
 
-  # =============================
-  # 4️⃣ BACKEND DJANGO
-  # =============================
+
+
 # =============================
   # 4️⃣ BACKEND DJANGO (Daphne for ASGI)
   # =============================
@@ -93,7 +74,6 @@ services:
     depends_on:
       - db
       - redis
-      - minio
       - dynamodb  # Added this since your chat now uses DynamoDB
       - backend_celery_worker
       - backend_celery_beat
@@ -211,7 +191,6 @@ services:
     depends_on:
       - chroma
       - mongodb
-      - minio
     env_file:
       - ./ai_service/.env
     networks:
@@ -230,7 +209,6 @@ networks:
 # =============================
 volumes:
   postgres_data:
-  minio_data:
   chroma_data:
   mongodb_data:
   dynamodb_data:

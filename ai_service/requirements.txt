@@ -7,7 +7,6 @@ pymongo
 python-dotenv
 pymupdf
 python-multipart
-minio
 redis
 scikit-learn
 groq
@@ -23,3 +22,5 @@ langchain-google-genai
 google-api-python-client 
 google-auth-httplib2 
 google-auth-oauthlib
+
+cloudinary
