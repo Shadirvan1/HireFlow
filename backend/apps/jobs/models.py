@@ -106,7 +106,6 @@ class JobApplication(models.Model):
         choices=[
             ("SCHEDULED", "Scheduled"),
             ("APPLIED", "Applied"),
-            ("SHORTLISTED", "Shortlisted"),
             ("REJECTED", "Rejected"),
             ("HIRED", "Hired"),
         ],

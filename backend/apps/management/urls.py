@@ -7,5 +7,6 @@ urlpatterns = [
     path("candidate/profile/",views.GetCandidateView.as_view()),
     path("add/notifications/", views.CreateNotificationAPIView.as_view()),
     path("notifications/<int:pk>/", views.NotificationDetailAPIView.as_view()),
+    path("hr-dashboard/", views.HRDashboardStatsView.as_view()),
     
 ]

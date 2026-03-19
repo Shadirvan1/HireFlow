@@ -38,6 +38,8 @@ import SingleJob from "./candidatepages/jobs/singlejob";
 import MyApplications from "./candidatepages/jobs/my_jobs";
 import ScheduledInterviews from "./hrpages/jobs/interviews";
 import HRProfilePage from "./hrpages/profile/hrprofile";
+import SingleApplication from "./hrpages/jobs/singleapplication";
+
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -86,6 +88,7 @@ function App() {
           <Route path="interviews" element={<ScheduledInterviews />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="notifications" element={<HRNotification />} />
+          <Route path="application/:appId" element={<SingleApplication />} />
           </Route>
           
           

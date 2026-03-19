@@ -444,21 +444,25 @@ class CandidateApplicationDetailView(APIView):
 
     def patch(self, request, version, pk):
         """
-        Update the status, meeting link, or schedule of the application.
+        Update status, meeting_link, and scheduled_at.
         """
         application = get_object_or_404(JobApplication, id=pk)
         
-        # Use partial=True to allow updating only the status without sending other fields
-        serializer = ApplicationStatusUpdateSerializer(application, data=request.data, partial=True)
+        # partial=True is key: it allows updating 1, 2, or all 3 fields sent in request.data
+        serializer = ApplicationStatusUpdateSerializer(
+            application, 
+            data=request.data, 
+            partial=True
+        )
         
         if serializer.is_valid():
             updated_app = serializer.save()
             
-            # Return the full updated data for frontend UI consistency
+            # We return the FullCandidateDetailSerializer so the frontend 
+            # gets the updated link and time immediately in one request.
             return Response({
-                "message": "Status updated successfully",
-                "current_status": updated_app.status,
+                "message": "Application updated successfully",
                 "data": FullCandidateDetailSerializer(updated_app).data
             }, status=status.HTTP_200_OK)
-            
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

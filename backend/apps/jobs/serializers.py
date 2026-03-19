@@ -208,10 +208,14 @@ class FullCandidateDetailSerializer(serializers.ModelSerializer):
 class ApplicationStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobApplication
+        # Explicitly listing all three fields to be updated
         fields = ['status', 'scheduled_at', 'meeting_link']
 
+
+
     def validate_status(self, value):
-        valid_statuses = [choice[0] for choice in JobApplication.status.field.choices]
+        # Extract choices directly from the model field
+        valid_statuses = [choice[0] for choice in JobApplication._meta.get_field('status').choices]
         if value not in valid_statuses:
             raise serializers.ValidationError(f"Invalid status. Choose from: {valid_statuses}")
         return value
