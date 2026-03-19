@@ -326,6 +326,7 @@ class HRProfileSerializer(serializers.ModelSerializer):
 
 
     def validate(self, attrs):
+        
         user = attrs.get("user")
 
 

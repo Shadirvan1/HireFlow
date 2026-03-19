@@ -456,3 +456,45 @@ class FirebaseVerifyView(APIView):
 
         except Exception as e:
             return Response({"error": "Invalid Firebase token"}, status=400)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
+from .models import HRProfile
+from .serializers import HRProfileSerializer
+
+class HRProfileDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+    # Parsers allow handling image and file uploads via FormData
+    parser_classes = (MultiPartParser, FormParser)
+
+    def get_object(self, user):
+        try:
+            return HRProfile.objects.get(user=user)
+        except HRProfile.DoesNotExist:
+            return None
+
+    def get(self, request, *args, **kwargs):
+        profile = self.get_object(request.user)
+        if not profile:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = HRProfileSerializer(profile)
+        return Response(serializer.data)
+
+    def patch(self, request, *args, **kwargs):
+        profile = self.get_object(request.user)
+        if not profile:
+            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Partial=True is key for editing only changed fields
+        serializer = HRProfileSerializer(profile, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        
+        # Returns your custom validation errors (e.g., "Experience cannot be negative")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

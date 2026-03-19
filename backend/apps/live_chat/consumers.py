@@ -16,20 +16,20 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
         self.other_user_id = str(self.scope["url_route"]["kwargs"]["userId"])
         
         try:
-            # Sort IDs to create a unique room name for this pair
+          
             ids = sorted([int(self.user.id), int(self.other_user_id)])
             self.room_name = f"private_{ids[0]}_{ids[1]}"
         except (ValueError, TypeError):
             await self.close()
             return
 
-        # 1. Set online status in Cache (1 hour timeout)
+      
         cache.set(f"user_online_{self.user.id}", True, timeout=3600)
 
         await self.channel_layer.group_add(self.room_name, self.channel_name)
         await self.accept()
 
-        # 2. Check if the OTHER user is currently online and tell the connector
+       
         other_online = cache.get(f"user_online_{self.other_user_id}", False)
         await self.send(text_data=json.dumps({
             "type": "presence",
@@ -37,7 +37,7 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
             "status": "online" if other_online else "offline"
         }))
 
-        # 3. Notify the other person in the room that I am now online
+       
         await self.channel_layer.group_send(
             self.room_name,
             {
@@ -69,7 +69,7 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
 
         message_id = str(uuid.uuid4())
 
-        # Save to DynamoDB
+      
         item = await sync_to_async(save_message_to_dynamo, thread_sensitive=False)(
             self.room_name,
             str(self.user.id),

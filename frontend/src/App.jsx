@@ -36,7 +36,8 @@ import HRNotification from "./hrpages/dashboard/notification";
 import SavedJobs from "./candidatepages/jobs/savedjobs";
 import SingleJob from "./candidatepages/jobs/singlejob";
 import MyApplications from "./candidatepages/jobs/my_jobs";
-
+import ScheduledInterviews from "./hrpages/jobs/interviews";
+import HRProfilePage from "./hrpages/profile/hrprofile";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -76,11 +77,13 @@ function App() {
           
           <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR',"INTERVIEWER"]}><HROutlet /></ProtectedRoute>} >
           <Route path="dashboard" element={<HrDashboard />} />
+          <Route path="profile" element={<HRProfilePage />} />
           <Route path="jobs" element={<HRJobs />} />
           <Route path="create-job" element={<CreateJob />} />
           <Route path="all-users" element={<InviteManagement />} />
           <Route path="security" element={<SecuritySettings />} />
           <Route path="applications" element={<HRApplications />} />
+          <Route path="interviews" element={<ScheduledInterviews />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="notifications" element={<HRNotification />} />
           </Route>

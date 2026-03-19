@@ -4,22 +4,21 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from apps.accounts.models import CandidateProfile, Company
 
-# ✅ Specialized storage for PDFs and Documents
-from cloudinary_storage.storage import RawMediaCloudinaryStorage
+from utils.cloudinary_storage import PublicRawMediaCloudinaryStorage
 
 User = get_user_model()
+
 
 def job_application_resume_upload(instance, filename):
     """
     Cloudinary path: resumes/user_<user_id>/<uuid>
-    Note: Cloudinary usually handles extensions automatically.
     """
     ext = os.path.splitext(filename)[1]
     user_id = "unknown"
+
     if instance.applicant and instance.applicant.user:
         user_id = instance.applicant.user.id
-        
-    # Return a path that Cloudinary will use as the Public ID
+
     return f"resumes/user_{user_id}/{uuid.uuid4()}{ext}"
 
 
@@ -79,20 +78,27 @@ class JobApplication(models.Model):
         related_name="applications"
     )
 
+    interviewer = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
     applicant = models.ForeignKey(
         CandidateProfile,
         on_delete=models.CASCADE,
         related_name="job_applications"
     )
 
-    # ✅ Using RawMediaCloudinaryStorage for PDF/Docx files
+    # ✅ FIXED STORAGE (PUBLIC CLOUDINARY)
     resume = models.FileField(
-        upload_to=job_application_resume_upload, 
-        storage=RawMediaCloudinaryStorage(),
-        blank=True, 
+        upload_to=job_application_resume_upload,
+        storage=PublicRawMediaCloudinaryStorage(),
+        blank=True,
         null=True
     )
-    
+
     cover_letter = models.TextField(blank=True, null=True)
 
     status = models.CharField(
@@ -106,7 +112,7 @@ class JobApplication(models.Model):
         ],
         default="APPLIED"
     )
-    
+
     scheduled_at = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(null=True, blank=True)
     interviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -114,26 +120,28 @@ class JobApplication(models.Model):
     applied_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('job', 'applicant') 
+        unique_together = ('job', 'applicant')
 
     def __str__(self):
         return f"{self.applicant} - {self.job}"
 
+
 class SavedJob(models.Model):
     user = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
+        User,
+        on_delete=models.CASCADE,
         related_name="saved_jobs"
     )
+
     job = models.ForeignKey(
-        Job, 
-        on_delete=models.CASCADE, 
+        Job,
+        on_delete=models.CASCADE,
         related_name="saved_by_users"
     )
+
     saved_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        # Prevent a user from saving the same job multiple times
         unique_together = ('user', 'job')
         ordering = ['-saved_at']
 

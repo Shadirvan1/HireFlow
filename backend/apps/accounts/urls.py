@@ -20,6 +20,7 @@ urlpatterns = [
     path("invite/<str:role>/", views.InviteUserView.as_view()),
     path("hr/register/<token>/", views.RegisterViaInviteView.as_view()),
     path("phone/verify-otp/", views.FirebaseVerifyView.as_view()),
+    path("hr/profile/", views.HRProfileDetailView.as_view()),
     
     
 ]

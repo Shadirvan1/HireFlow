@@ -8,7 +8,7 @@ from .models import Job, JobApplication
 from lambda_push.notification_service import send_notification
 from apps.accounts.models import HRProfile
 
-FASTAPI_URL = os.getenv("FASTAPI_URL")
+FASTAPI_URL ="http://ai_service:8002/api/ai" 
 
 # Define the common headers here
 def get_auth_headers():
@@ -75,47 +75,68 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
         except Exception as e:
             print(f"LLM verification failed for Job {instance.id}: {e}")
 
+
+            
+from utils.cloudinary_storage import get_signed_resume_url
+import requests
+
 @receiver(post_save, sender=JobApplication)
 def send_resume_for_ranking(sender, instance, created, **kwargs):
     print(f"Processing resume for application {instance.id}")
-    if created and instance.resume:
-        job = instance.job
-        print(job.user.email)
-        print(f"Job {job.id} has embedd_id: {job.embedd_id}")
-        
-        if not job.embedd_id:
-            print(f"Job {job.id} does not have an embedding ID. Skipping AI processing.")
-            return
-        print(f"Preparing to send resume for application {instance.id} to AI service...")
-        print(instance.applicant.user.email)
-        candidate_email = instance.applicant.user.email if instance.applicant and instance.applicant.user else "unknown"
-        print(f"Candidate email: {candidate_email}")
-        interviewer_email = job.user.email if job.user else "admin@company.com"
-        data = {
 
+    if not created or not instance.resume:
+        return
+
+    job = instance.job
+
+    if not job.embedd_id:
+        print(f"Job {job.id} does not have embedding ID. Skipping.")
+        return
+
+    try:
+        candidate_email = (
+            instance.applicant.user.email
+            if instance.applicant and instance.applicant.user
+            else "unknown"
+        )
+
+        interviewer_email = job.user.email if job.user else "admin@company.com"
+
+        data = {
             "application_id": str(instance.id),
             "job_embedding_id": job.embedd_id,
-            "company_id": str(job.company.id) if job.company else "unknown",
+            "company_id": str(job.company.id),
             "is_automatic": str(job.is_automatic),
             "ats_score_threshold": str(job.ats_ascore),
             "job_title": job.title,
             "candidate_email": candidate_email,
-            "hr_email": interviewer_email
+            "hr_email": interviewer_email,
         }
-        print(interviewer_email)
-        print(f"Data prepared for AI service: {data}")
-        files = {'file': instance.resume.open('rb')}
-        print(f"File {instance.resume.name} opened for reading.")
-        try:
-            print(f"Sending request to AI service for application {instance.id}")
-            response = requests.post(
-                f"{FASTAPI_URL}/process-resume", 
-                files=files, 
-                data=data, 
-                headers=get_auth_headers(),
-                timeout=15 
-            )
-            response.raise_for_status()
-            print(f"✅ App {instance.id} sent with Auth Header.")
-        except Exception as e:
-            print(f"❌ Signal Error: {e}")
+
+        print("Generating signed URL and fetching resume from Cloudinary...")
+
+        # ✅ FIX: Use the signed URL instead of the public .url
+        signed_url = get_signed_resume_url(instance)
+        file_response = requests.get(signed_url, timeout=10)
+        file_response.raise_for_status()
+
+        files = {
+            # We send the binary content fetched from Cloudinary to FastAPI
+            'file': (instance.resume.name, file_response.content)
+        }
+
+        print("Sending to AI service...")
+
+        response = requests.post(
+            f"{FASTAPI_URL}/process-resume",
+            files=files,
+            data=data,
+            headers=get_auth_headers(),
+            timeout=20  # Increased timeout for AI processing
+        )
+
+        response.raise_for_status()
+        print(f"✅ Application {instance.id} processed successfully")
+
+    except Exception as e:
+        print(f"❌ Signal Error: {e}")

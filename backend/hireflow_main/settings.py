@@ -40,6 +40,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Application definition
 
 INSTALLED_APPS = [
+    'cloudinary_storage',
     "daphne",
     "channels",
     'django.contrib.admin',
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',
     "apps.accounts",
     "apps.jobs",
     "apps.management",
@@ -59,14 +61,13 @@ INSTALLED_APPS = [
     "storages",
     'django_celery_beat',
     'apps.live_chat',
-    'cloudinary_storage',
-    'cloudinary',
 
 
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -121,22 +122,12 @@ CHANNEL_LAYERS = {
 }
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'dj046s16s'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY',"598374668928111"),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET',"eBHyrHUQeljXs7peZ7pb5YVvAPQ"),
 }
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# 3. Define the Storage Split (Django 4.2+)
-STORAGES = {
-    "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -256,4 +247,13 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
+STATICFILES_DIRS = [
+    BASE_DIR / "static", 
+]
 
+# 2. Where Django "collects" files for the webserver (output)
+# This is where your Admin CSS lives!
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# 3. The URL prefix
+STATIC_URL = '/static/'
