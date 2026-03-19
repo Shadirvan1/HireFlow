@@ -3,6 +3,12 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from apps.accounts.models import Company, HRProfile, CandidateProfile
 import datetime
+from django.urls import reverse
+from rest_framework.test import APITestCase
+from rest_framework import status
+from django.contrib.auth import get_user_model
+
+
 
 User = get_user_model()
 
@@ -102,3 +108,138 @@ class UtilityModelTests(TestCase):
         otp_entry.created_at = timezone.now() - datetime.timedelta(minutes=10)
         otp_entry.save()
         self.assertFalse(otp_entry.is_valid())
+
+class BaseTestCase(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="test@example.com",
+            password="Test@123",
+            is_verified=True,
+            is_active=True
+        )
+
+
+class TestRegister(BaseTestCase):
+
+    def test_register_success(self):
+        url = "/api/v1/accounts/register/"
+
+        data = {
+            "email": "new@example.com",
+            "password": "Test@123"
+        }
+
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("user", response.data)
+    
+class TestRegister(BaseTestCase):
+
+    def test_register_success(self):
+        url = "/api/v1/accounts/register/"
+
+        data = {
+            "email": "new@example.com",
+            "password": "Test@123"
+        }
+
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn("user", response.data)
+
+class TestLogin(BaseTestCase):
+
+    def test_login_success(self):
+        url = "/api/v1/accounts/login/"
+
+        data = {
+            "email": "test@example.com",
+            "password": "Test@123"
+        }
+
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("user", response.data)
+
+    def test_login_wrong_password(self):
+        url = "/api/v1/accounts/login/"
+
+        data = {
+            "email": "test@example.com",
+            "password": "wrong"
+        }
+
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TestResendEmail(BaseTestCase):
+
+    def test_resend_email_success(self):
+        self.user.is_verified = False
+        self.user.save()
+
+        url = "/api/v1/accounts/resend-email/"
+
+        response = self.client.post(url, {"email": self.user.email})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_resend_email_already_verified(self):
+        url = "/api/v1/accounts/resend-email/"
+
+        response = self.client.post(url, {"email": self.user.email})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class TestMeView(BaseTestCase):
+
+    def test_me(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = "/api/v1/accounts/me/"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["user_id"], self.user.id)
+
+class TestMFA(BaseTestCase):
+
+    def test_get_mfa_setup(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = "/api/v1/accounts/mfa/setup/"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("otp_uri", response.data)
+    
+class TestRefreshToken(BaseTestCase):
+
+    def test_refresh_without_cookie(self):
+        url = "/api/v1/accounts/token/refresh/"
+        response = self.client.post(url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+from unittest.mock import patch
+
+class TestGoogleAuth(BaseTestCase):
+
+    @patch("google.oauth2.id_token.verify_oauth2_token")
+    def test_google_login(self, mock_verify):
+        mock_verify.return_value = {
+            "email": "google@test.com",
+            "given_name": "Test",
+            "family_name": "User"
+        }
+
+        url = "/api/v1/accounts/google/"
+
+        response = self.client.post(url, {"token": "fake-token"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

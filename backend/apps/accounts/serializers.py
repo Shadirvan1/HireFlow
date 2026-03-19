@@ -3,7 +3,9 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from .models import CandidateProfile,HRProfile,Company
 import re
-
+from apps.accounts.services.mfa_service import enable_mfa
+from .services.mfa_service import verify_otp
+from .services.mfa_service import disable_mfa
 from django.db.models import Q
 User = get_user_model()
 
@@ -132,47 +134,51 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
 
         return data
 
-
-
 class SeekerLoginSerializer(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField(write_only=True)
+    otp = serializers.CharField(write_only=True, required=False)
     fcm_token = serializers.CharField(write_only=True, required=False, allow_null=True)
-    
 
     def validate(self, attrs):
         email = attrs.get("email")
         password = attrs.get("password")
+        otp = attrs.get("otp")
 
         try:
-            user = User.objects.get(
-                email__iexact=email 
-            )
+            user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
             raise serializers.ValidationError({
-                "email": "Invalid email or phone number"
+                "email": "Invalid email"
             })
 
         if not user.check_password(password):
             raise serializers.ValidationError({
                 "password": "Incorrect password"
             })
-        if user.role == "ADMIN":
-            pass
-        else:
+
+        if user.role != "ADMIN":
             if not user.is_verified:
                 raise serializers.ValidationError({
                     "email": "Please verify your account first"
                 })
+
             if not user.is_active:
                 raise serializers.ValidationError({
-                    "email":"Please contact admin"
+                    "email": "Please contact admin"
                 })
 
-        if not user.is_active:
-            raise serializers.ValidationError({
-                "email": "User is inactive. Contact admin."
-            })
+        if user.mfa_enabled:
+            if not otp:
+                raise serializers.ValidationError({
+                    "mfa_required": True,
+                    "email": user.email
+                })
+
+            if not verify_otp(user, otp):
+                raise serializers.ValidationError({
+                    "otp": "Invalid OTP"
+                })
 
         attrs["user"] = user
         return attrs
@@ -543,3 +549,115 @@ class InviteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invite
         fields = ["email", "role", "company", "expires_at"]
+class ResendEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate(self, data):
+        email = data.get("email")
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "Email is invalid"})
+
+        if user.is_verified:
+            raise serializers.ValidationError({"email": "Email is already verified"})
+
+        data["user"] = user
+        return data
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    token = serializers.CharField(required=False)
+    credential = serializers.CharField(required=False)
+
+    def validate(self, data):
+        token = data.get("token") or data.get("credential")
+
+        if not token:
+            raise serializers.ValidationError({"error": "No token provided"})
+
+        google_id = os.getenv("GOOGLE_CLIENT_ID")
+
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, google_requests.Request(), google_id
+            )
+        except ValueError:
+            raise serializers.ValidationError({"error": "Token verification failed"})
+
+        email = idinfo.get("email")
+        first_name = idinfo.get("given_name", "")
+        last_name = idinfo.get("family_name", "")
+
+        if not email:
+            raise serializers.ValidationError({"error": "Invalid token"})
+
+        data["email"] = email
+        data["first_name"] = first_name
+        data["last_name"] = last_name
+
+        return data
+
+    def create(self, validated_data):
+        email = validated_data["email"]
+        first_name = validated_data["first_name"]
+        last_name = validated_data["last_name"]
+
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": first_name,
+                "is_verified": True
+            }
+        )
+
+        if created:
+            user.set_unusable_password()
+            user.save()
+
+            CandidateProfile.objects.create(
+                user=user,
+                first_name=first_name,
+                last_name=last_name
+            )
+
+        return user
+
+class DisableMFASerializer(serializers.Serializer):
+    otp = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        otp = attrs.get("otp")
+
+        if not user.mfa_enabled:
+            raise serializers.ValidationError({
+                "detail": "MFA is not enabled"
+            })
+
+        if not disable_mfa(user, otp):
+            raise serializers.ValidationError({
+                "otp": "Invalid OTP"
+            })
+
+        return attrs
+
+class EnableMFASerializer(serializers.Serializer):
+    otp = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        otp = attrs.get("otp")
+
+        if user.mfa_enabled:
+            raise serializers.ValidationError({
+                "detail": "MFA already enabled"
+            })
+
+        if not enable_mfa(user, otp):
+            raise serializers.ValidationError({
+                "otp": "Invalid OTP"
+            })
+
+        return attrs

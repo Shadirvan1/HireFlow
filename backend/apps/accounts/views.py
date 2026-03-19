@@ -1,27 +1,55 @@
-# accounts/views.py
 import os
+from datetime import timedelta
+import random
+
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
+from django.utils import timezone
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
+
 from rest_framework import views, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
+
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-import pyotp
+
+from firebase_admin import messaging, auth as firebase_auth
+
+from .models import CandidateProfile, HRProfile, Invite, Company
 from .serializers import (
-    SeekerSerializer,  SeekerLoginSerializer,
+    SeekerSerializer,
+    SeekerLoginSerializer,
     CandidateProfileSerializer,
+    HRRegisterSerializer,
+    ResendEmailSerializer,
+    GoogleAuthSerializer,
+    DisableMFASerializer,
+    EnableMFASerializer
 )
-from .models import CandidateProfile, HRProfile
+
 from .utilities import send_verification_email, send_password_reset_email
 from .services.jwt_service import create_tokens_for_user, set_tokens_in_response, refresh_tokens
-from .services.mfa_service import generate_mfa_secret, get_provisioning_uri, enable_mfa, disable_mfa
+from .services.mfa_service import (
+    generate_mfa_secret,
+    get_provisioning_uri,
+    enable_mfa,
+    disable_mfa,
+    verify_otp
+)
+
+from lambda_push.notification_service import send_notification
+from lambda_push.lambda_function import initialize_firebase
+
+import firebase_config
 
 User = get_user_model()
+FRONT_END_URL = os.getenv("FRONT_END_URL")
 
 
 class SeekerRegisterView(views.APIView):
@@ -43,25 +71,22 @@ class SeekerRegisterView(views.APIView):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#TODO:change to serializer 
+
 class ResendEmailLinkView(views.APIView):
     permission_classes = [AllowAny]
+    serializer_class = ResendEmailSerializer
 
     def post(self, request, version):
-        email = request.data.get("email")
-        if not email:
-            return Response({"error": "Please provide email"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"error": "Email is invalid"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if user.is_verified:
-            return Response({"error": "Email is already verified"}, status=status.HTTP_400_BAD_REQUEST)
-
+        user = serializer.validated_data["user"]
         send_verification_email(user)
-        return Response({"message": "Verification link sent successfully"}, status=status.HTTP_200_OK)
+
+        return Response(
+            {"message": "Verification link sent successfully"},
+            status=status.HTTP_200_OK
+        )
 
 
 class CandidateProfileView(views.APIView):
@@ -71,20 +96,19 @@ class CandidateProfileView(views.APIView):
     def get(self, request, version):
         profile = request.user.candidate_profile
         serializer = self.serializer_class(profile)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, version):
         profile = request.user.candidate_profile
         serializer = self.serializer_class(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Profile updated successfully", "data": serializer.data},status=status.HTTP_200_OK)
-        
+            return Response(
+                {"message": "Profile updated successfully", "data": serializer.data},
+                status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-from .serializers import HRRegisterSerializer
 
 class HRRegisterView(views.APIView):
     permission_classes = [AllowAny]
@@ -126,45 +150,29 @@ class VerifyEmailView(views.APIView):
 
 class GoogleAuthenticationView(views.APIView):
     permission_classes = [AllowAny]
+    serializer_class = GoogleAuthSerializer
 
     def post(self, request, version):
-        token = request.data.get("token") or request.data.get("credential")
-        if not token:
-            return Response({"error": "No token provided"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        google_id = os.getenv("GOOGLE_CLIENT_ID")
-        try:
-            idinfo = id_token.verify_oauth2_token(token, google_requests.Request(), google_id)
-        except ValueError:
-            return Response({"error": "Token verification failed"}, status=status.HTTP_400_BAD_REQUEST)
-
-        email = idinfo.get("email")
-        first_name = idinfo.get("given_name", "")
-        last_name = idinfo.get("family_name", "")
-
-        if not email:
-            return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
-
-        user, created = User.objects.get_or_create(
-            email=email, defaults={"username": first_name, "is_verified": True}
-        )
-        if created:
-            user.set_unusable_password()
-            user.save()
-            CandidateProfile.objects.create(user=user, first_name=first_name, last_name=last_name)
+        user = serializer.save()
 
         tokens = create_tokens_for_user(user)
+
         response = Response(
             {
                 "detail": "Login successful",
-                "user": {"id": str(user.id), "email": user.email, "role": user.role}
+                "user": {
+                    "id": str(user.id),
+                    "email": user.email,
+                    "role": user.role
+                }
             },
             status=status.HTTP_200_OK
         )
-        response = set_tokens_in_response(response, tokens)
-        return response
-    
-from .services.mfa_service import verify_otp
+
+        return set_tokens_in_response(response, tokens)
 
 class LoginView(views.APIView):
     permission_classes = [AllowAny]
@@ -172,12 +180,9 @@ class LoginView(views.APIView):
 
     def post(self, request, version):
         serializer = self.serializer_class(data=request.data)
-
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        
 
         if user.role == "HR" and not user.is_hr:
             return Response(
@@ -185,26 +190,6 @@ class LoginView(views.APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if user.mfa_enabled:
-            otp = request.data.get("otp")
-
-            if not otp:
-                return Response(
-                    {
-                        "mfa_required": True,
-                        "email": user.email
-                    },
-                    status=status.HTTP_200_OK
-                )
-            verify = verify_otp(user,otp)
-            if not verify:
-                return Response(
-                    {"error": "Invalid OTP"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-
-        login(request, user)
         fcm_token = serializer.validated_data.get("fcm_token")
         if fcm_token:
             user.fcm_token = fcm_token
@@ -224,75 +209,94 @@ class LoginView(views.APIView):
             status=status.HTTP_200_OK
         )
 
-        response = set_tokens_in_response(response, tokens)
-        return response
+        return set_tokens_in_response(response, tokens)
 
 
 class SetupMFAView(views.APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = EnableMFASerializer
 
     def get(self, request, version):
-
         user = request.user
+
         if user.mfa_enabled:
-            return Response({"message": "MFA already enabled", 'mfa_enabled': user.mfa_enabled}, status=status.HTTP_200_OK)
-        secret = generate_mfa_secret(user)
+            return Response(
+                {
+                    "message": "MFA already enabled",
+                    "mfa_enabled": True
+                },
+                status=status.HTTP_200_OK
+            )
+
+        generate_mfa_secret(user)
         otp_uri = get_provisioning_uri(user)
-        return Response({"secret": user.mfa_secret, "otp_uri": otp_uri, 'mfa_enabled': user.mfa_enabled}, status=status.HTTP_200_OK)
+
+        return Response(
+            {
+                "secret": user.mfa_secret,
+                "otp_uri": otp_uri,
+                "mfa_enabled": False
+            },
+            status=status.HTTP_200_OK
+        )
 
     def post(self, request, version):
-        user = request.user
-        otp = request.data.get("otp")
-        if enable_mfa(user, otp):
-            return Response({"message": "MFA successfully enabled"}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.serializer_class(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
 
+        return Response(
+            {"message": "MFA successfully enabled"},
+            status=status.HTTP_200_OK
+        )
 
 class DisableMFAView(views.APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = DisableMFASerializer
 
     def post(self, request, version):
-        user = request.user
-        otp = request.data.get("otp")
-        if disable_mfa(user, otp):
-            return Response({"message": "MFA disabled successfully"}, status=status.HTTP_200_OK)
-        return Response({"error": "Invalid OTP or MFA not enabled"}, status=status.HTTP_400_BAD_REQUEST)
-    
-from lambda_push.notification_service import send_notification
-from lambda_push.lambda_function import initialize_firebase
-from firebase_admin import messaging
+        serializer = self.serializer_class(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
 
+        return Response(
+            {"message": "MFA disabled successfully"},
+            status=status.HTTP_200_OK
+        )
 
 class Me(views.APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request,version):
+    def get(self, request, version):
         user = request.user
-        
-       
+        return Response(
+            {"user_id": user.id, "role": user.role},
+            status=status.HTTP_200_OK
+        )
 
-
-        return Response({
-            "user_id": user.id,
-            "role": user.role,  
-        }, status=status.HTTP_200_OK)
-    
 
 class RefreshTokenView(views.APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, version):
         refresh_token = request.COOKIES.get("refresh_token")
-        
+
         if not refresh_token:
             return Response({"error": "Refresh token missing"}, status=status.HTTP_401_UNAUTHORIZED)
+
         try:
             tokens = refresh_tokens(refresh_token)
             response = Response({"message": "Access token refreshed"}, status=status.HTTP_200_OK)
-            response = set_tokens_in_response(response, tokens)
-            return response
+            return set_tokens_in_response(response, tokens)
         except TokenError:
-            response = Response({"error": "Invalid or expired refresh token"}, status=status.HTTP_401_UNAUTHORIZED)
+            response = Response(
+                {"error": "Invalid or expired refresh token"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
             response.delete_cookie("access_token")
             response.delete_cookie("refresh_token")
             return response
@@ -304,197 +308,13 @@ class LogoutView(views.APIView):
     def post(self, request, version):
         refresh_token = request.COOKIES.get("refresh_token")
         response = Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+
         if refresh_token:
             try:
-                token = RefreshToken(refresh_token)
-                token.blacklist()
+                RefreshToken(refresh_token).blacklist()
             except TokenError:
                 pass
+
         response.delete_cookie("refresh_token")
         response.delete_cookie("access_token")
         return response
-
-
-class ForgotPasswordView(views.APIView):
-    def post(self, request, version):
-        email = request.data.get("email")
-        if not email:
-            return Response({"error": "Email is required"}, status=400)
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"message": "If email exists, reset link sent."})
-        send_password_reset_email(user)
-        return Response({"message": "Reset link sent to email."})
-
-
-class ResetPasswordView(views.APIView):
-    def post(self, request, version):
-        uid = request.data.get("uid")
-        token = request.data.get("token")
-        password = request.data.get("password")
-        if not uid or not token or not password:
-            return Response({"error": "Invalid data"}, status=400)
-        try:
-            user_id = force_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(pk=user_id)
-        except:
-            return Response({"error": "Invalid link"}, status=400)
-        if not PasswordResetTokenGenerator().check_token(user, token):
-            return Response({"error": "Token invalid or expired"}, status=400)
-        user.set_password(password)
-        user.save()
-        return Response({"message": "Password reset successful"})
-    
-from datetime import timedelta
-from .models import Invite,Company
-from datetime import timedelta
-from django.utils import timezone
-import os
-FRONT_END_URL = os.getenv("FRONT_END_URL")
-class InviteUserView(views.APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, version, role):
-
-        role = role.upper()
-
-        if role not in ["HR", "INTERVIEWER"]:
-            return Response({"error": "Invalid role"}, status=400)
-
-       
-        try:
-            company = request.user.hr_profile.company
-        except:
-            return Response({"error": "No company attached"}, status=400)
-
-        invite = Invite.objects.create(
-            company=company,
-            role=role,
-            expires_at=timezone.now() + timedelta(days=3)
-        )
-
-        invite_link = f"{FRONT_END_URL}/register/{invite.token}"
-
-        return Response({
-            "invite_link": invite_link,
-            "role": role
-        }, status=201)
-class RegisterViaInviteView(views.APIView):
-    permission_classes = [AllowAny]
-
-    def post(self, request, version, token):
-
-        username = request.data.get("username")
-        email = request.data.get("email")
-        password = request.data.get("password")
-
-        invite = Invite.objects.filter(
-            token=token,
-            is_used=False,
-            expires_at__gte=timezone.now()
-        ).first()
-
-        if not invite:
-            return Response({"error": "Invalid or expired invite"}, status=400)
-       
-        user = User.objects.create_user(
-        email=email,
-        password=password,
-        username=username,
-        role="HR" if invite.role == "HR" else 'INTERVIEWER',
-        is_hr = True,
-        is_verified = True,
-
-        )
-
-        
-        HRProfile.objects.create(
-            user=user,
-            company=invite.company,
-            role="HR" if invite.role == "HR" else "INTERVIEWER"
-        )
-
-        invite.is_used = True
-        invite.save()
-
-        return Response({
-            "message": "Registration successful",
-            "company": invite.company.name,
-            "role": invite.role
-        }, status=201)
-    
-# views.py
-import random
-from rest_framework.views import APIView
-from rest_framework.response import Response
-
-from firebase_admin import auth as firebase_auth
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from firebase_admin import auth as firebase_auth 
-import firebase_config
-
-class FirebaseVerifyView(APIView):
-    def post(self, request, version):
-        id_token = request.data.get("id_token")
-
-        if not id_token:
-            return Response({"error": "No token provided"}, status=400)
-
-        try:
-            decoded_token = firebase_auth.verify_id_token(id_token)
-            phone_number = decoded_token.get("phone_number")
-
-            user = request.user
-            user.phone_number = phone_number
-            user.is_number_verified = True
-            user.save()
-
-            return Response({"message": "Phone verified successfully"})
-
-        except Exception as e:
-            return Response({"error": "Invalid Firebase token"}, status=400)
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import MultiPartParser, FormParser
-from .models import HRProfile
-from .serializers import HRProfileSerializer
-
-class HRProfileDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-    # Parsers allow handling image and file uploads via FormData
-    parser_classes = (MultiPartParser, FormParser)
-
-    def get_object(self, user):
-        try:
-            return HRProfile.objects.get(user=user)
-        except HRProfile.DoesNotExist:
-            return None
-
-    def get(self, request, *args, **kwargs):
-        profile = self.get_object(request.user)
-        if not profile:
-            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = HRProfileSerializer(profile)
-        return Response(serializer.data)
-
-    def patch(self, request, *args, **kwargs):
-        profile = self.get_object(request.user)
-        if not profile:
-            return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Partial=True is key for editing only changed fields
-        serializer = HRProfileSerializer(profile, data=request.data, partial=True)
-        
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        
-        # Returns your custom validation errors (e.g., "Experience cannot be negative")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
