@@ -34,7 +34,9 @@ from .serializers import (
     Hrserializer,
     HRProfileSerializer,
     FirebaseVerifySerializer,
-    RegisterViaInviteSerializer
+    RegisterViaInviteSerializer,
+    ForgotPasswordSerializer,
+    ResetPasswordSerializer
 
 
 )
@@ -349,7 +351,7 @@ class ResetPasswordView(views.APIView):
         return Response(serializer.errors, status=400)
 
 
-FRONT_END_URL = os.getenv("FRONT_END_URL")
+
 class InviteUserView(views.APIView):
     permission_classes = [IsAuthenticated]
 

@@ -4,7 +4,7 @@ from .models import Notification
 from rest_framework import serializers
 from .models import Notification
 from django.contrib.auth.models import User
-from jobs.models import JobApplication
+from apps.jobs.models import JobApplication
 
 class NotificationSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()

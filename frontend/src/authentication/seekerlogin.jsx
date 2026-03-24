@@ -72,6 +72,7 @@ export default function Login() {
 
     } catch (error) {
       const data = error.response?.data;
+      console.log(error.response)
 
       if (data) {
         const fieldErrorData = {};

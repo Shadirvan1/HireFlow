@@ -275,3 +275,307 @@ class GetALLJobsRank(APIView):
             return Response({"error": "AI service timeout"}, status=status.HTTP_504_GATEWAY_TIMEOUT)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ApplicationStatusView(APIView):
+    permission_classes = []
+
+    def post(self, request, version):
+        print("Application status callback received from n8n")
+
+        # Security Check
+        callback_key = request.headers.get('X-CALLBACK-KEY')
+        if callback_key != settings.N8N_CALLBACK_SECRET:
+            return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Validation
+        serializer = UpdateApplicationStatusSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            application_id = data["application_id"]
+            incoming_status = data["status"]
+
+            try:
+                application = JobApplication.objects.get(id=application_id)
+
+                # Status Mapping
+                if incoming_status == "INTERVIEW_SCHEDULED":
+                    application.status = "SCHEDULED"
+                    application.meeting_link = data.get("meeting_link")
+                    application.scheduled_at = data.get("scheduled_at")
+
+                elif incoming_status == "REJECTED":
+                    application.status = "REJECTED"
+
+                elif incoming_status == "HIRED":
+                    application.status = "HIRED"
+
+                application.save()
+
+                return Response({
+                    "message": "Application status updated",
+                    "id": application.id,
+                    "status": application.status
+                }, status=status.HTTP_200_OK)
+
+            except JobApplication.DoesNotExist:
+                return Response({"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ToggleSaveJobView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, version, pk):
+        job = Job.objects.get(id=pk) 
+        saved_job, created = SavedJob.objects.get_or_create(user=request.user, job=job)
+        
+        if not created:
+            saved_job.delete()
+            return Response({"message": "Job removed from saved list", "saved": False})
+        
+        return Response({"message": "Job saved successfully", "saved": True})
+    
+
+class MyApplicationsListView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
+
+    def get(self, request, version):
+        try:
+            queryset = JobApplication.objects.filter(
+                applicant=request.user.candidate_profile
+            ).select_related('job', 'job__company').order_by('-applied_at')
+        except AttributeError:
+            queryset = JobApplication.objects.none()
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = JobApplicationReadSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
+        serializer = JobApplicationReadSerializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+from rest_framework.views import APIView
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from django.utils import timezone
+
+from .models import JobApplication
+from .serializers import ScheduledInterviewSerializer
+
+
+class ScheduledInterviewsAPIView(APIView):
+    """
+    Returns a list of scheduled interviews.
+    
+    - HR: sees all scheduled interviews
+    - Interviewer: sees only interviews assigned to them
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        user_role = getattr(user, 'role', None)
+
+        # Base queryset (only scheduled interviews)
+        queryset = JobApplication.objects.filter(status="SCHEDULED")
+
+        # 🔐 Role-based filtering
+        if user_role == "HR":
+            # HR sees all
+            pass
+
+        elif user_role == "INTERVIEWER":
+            queryset = queryset.filter(interviewer=user)
+
+        else:
+            return Response(
+                {"error": "Unauthorized role"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Optional: filter only upcoming interviews
+        upcoming_only = request.query_params.get("upcoming", "false").lower()
+
+        if upcoming_only == "true":
+            queryset = queryset.filter(scheduled_at__gte=timezone.now())
+
+        # Order by interview date
+        queryset = queryset.order_by("scheduled_at")
+
+        # Serialize data
+        serializer = ScheduledInterviewSerializer(queryset, many=True)
+
+        return Response({
+            "count": queryset.count(),
+            "results": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class InterviewersListView(APIView):
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, version):
+            try:
+                # 1. Get the company of the logged-in HR/User
+                # We look at the HRProfile of the person making the request
+                current_user_profile = request.user.hr_profile
+                user_company = current_user_profile.company
+
+                if not user_company:
+                    return Response({"error": "User is not associated with a company"}, status=400)
+
+                # 2. Fetch all HRProfiles in the SAME company
+                # We can filter for specific roles if needed (e.g., HR and INTERVIEWER)
+                company_members = HRProfile.objects.filter(
+                    company=user_company,
+                    is_active=True
+                ).select_related('user')
+
+                # 3. Format the data for the frontend
+                interviewers_list = []
+                for profile in company_members:
+                    interviewers_list.append({
+                        "id": profile.user.id,
+                        "full_name": profile.user.username,
+                        "email": profile.user.email,
+                        "designation": profile.designation,
+                        "role": profile.role
+                    })
+
+                return Response(interviewers_list)
+
+            except HRProfile.DoesNotExist:
+                return Response({"error": "HR Profile not found"}, status=404)
+
+
+
+class AssignInterviewerView(APIView):
+    """
+    Assign or remove an interviewer for a job application.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, version, pk):
+        try:
+            application = JobApplication.objects.get(pk=pk)
+        except JobApplication.DoesNotExist:
+            return Response(
+                {"error": "Application not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        interviewer_id = request.data.get("interviewer_id")
+
+        # 🔹 Assign interviewer
+        if interviewer_id:
+            try:
+                user = User.objects.get(id=interviewer_id)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "Interviewer not found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Optional: check role
+            if getattr(user, "role", None) != "INTERVIEWER":
+                return Response(
+                    {"error": "User is not an interviewer"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            application.interviewer = user
+
+        else:
+            application.interviewer = None
+
+        application.save()
+
+        return Response(
+            {
+                "message": "Interviewer updated successfully",
+                "application_id": application.id,
+                "interviewer_id": application.interviewer.id if application.interviewer else None
+            },
+            status=status.HTTP_200_OK
+        )
+    
+
+class CandidateApplicationDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self, request, pk):
+        user = request.user
+        role = getattr(user, "role", None)
+
+       
+        if role == "CANDIDATE":
+            try:
+                candidate_profile = user.candidate_profile
+            except:
+                return None
+
+            return get_object_or_404(
+                JobApplication.objects.select_related("job", "job__company"),
+                id=pk,
+                applicant=candidate_profile
+            )
+
+        elif role == "HR":
+            return get_object_or_404(
+                JobApplication.objects.select_related("job", "job__company"),
+                id=pk,
+                job__company__hr_members__user=user   # 🔥 FIX
+            )
+
+        return None
+
+    def get(self, request, version, pk):
+        application = self.get_object(request, pk)
+
+        if not application:
+            return Response(
+                {"error": "Not authorized or not found"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = FullCandidateDetailSerializer(application)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    def patch(self, request, version, pk):
+        user = request.user
+
+        if getattr(user, "role", None) != "HR":
+            return Response(
+                {"error": "Only HR can update"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        application = self.get_object(request, pk)
+
+        if not application:
+            return Response(
+                {"error": "Not authorized or not found"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = ApplicationStatusUpdateSerializer(
+            application,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            updated_app = serializer.save()
+
+            return Response({
+                "message": "Application updated successfully",
+                "current_status": updated_app.status,
+                "data": FullCandidateDetailSerializer(updated_app).data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

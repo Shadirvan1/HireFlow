@@ -7,7 +7,7 @@ from apps.accounts.services.mfa_service import enable_mfa
 from .services.mfa_service import verify_otp
 from .services.mfa_service import disable_mfa
 from django.db.models import Q
-from timezone import timezone
+from datetime import timezone
 User = get_user_model()
 
 
@@ -138,7 +138,7 @@ class CandidateProfileSerializer(serializers.ModelSerializer):
 class SeekerLoginSerializer(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField(write_only=True)
-    otp = serializers.CharField(write_only=True, required=False)
+    otp = serializers.CharField(write_only=True, required=False,allow_blank=True)
     fcm_token = serializers.CharField(write_only=True, required=False, allow_null=True)
 
     def validate(self, attrs):
@@ -796,7 +796,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .utils import send_password_reset_email  # adjust import as needed
+from .utilities import send_password_reset_email
 
 User = get_user_model()
 

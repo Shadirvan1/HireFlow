@@ -5,7 +5,7 @@ from apps.accounts.serializers import HRProfileSerializer
 from apps.accounts.models import HRProfile
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
-from jobs.models import Job, JobApplication
+from apps.jobs.models import Job, JobApplication
 # Create your views here.
 User = get_user_model()
 

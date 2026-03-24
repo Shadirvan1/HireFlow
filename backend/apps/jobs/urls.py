@@ -17,4 +17,5 @@ urlpatterns = [
     path('interviewers/list/', views.InterviewersListView.as_view(), name='interviewers-list'),
     path('assign/interviewer/<int:pk>/', views.AssignInterviewerView.as_view(), name='assign-interviewer'),
     path('hr/candidate/application/<int:pk>/', views.CandidateApplicationDetailView.as_view(), name='candidate-app-detail'),
+
 ]
