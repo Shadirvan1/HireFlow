@@ -21,11 +21,9 @@ def sanitize_metadata(data: dict):
     return sanitized
 @router.post("/process-job")
 async def process_job(jd: dict):
-    # 1️⃣ Generate embedding ID
     embedding_id = jd.get("job_id") or str(uuid.uuid4())
     
-    # Extract company_id for logging/logic
-    company_id = jd.get("company_id") # Sent from Django signal
+    company_id = jd.get("company_id")  
 
     
     text = f"{jd.get('title','')}\n{jd.get('description','')}\n{jd.get('requirements','')}"
@@ -60,8 +58,7 @@ async def process_job(jd: dict):
     }
     logs_collection.insert_one(log_entry)
 
-    # Console feedback
-    print(trust_info)
+    
 
     return {
         "embedd_id": embedding_id,

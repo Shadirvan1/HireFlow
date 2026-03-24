@@ -1,7 +1,6 @@
 import os
 from pymongo import MongoClient
 
-# Add ?authSource=admin to ensure the login is verified against the root user table
 MONGO_URL = os.getenv(
     "MONGO_URL", 
     "mongodb://mongo_admin:mongo_pass@mongodb:27017/?authSource=admin"

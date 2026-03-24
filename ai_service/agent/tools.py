@@ -7,7 +7,7 @@ def search_jobs(query: str, company_id: Optional[str] = None):
 
     """Search job postings. Candidates see all jobs, HR see only their own."""
     
-    print("seacrch jobs")
+    
     embedding = generate_embedding(query)
 
     search_filter = {"company_id": company_id} if company_id else None
@@ -24,9 +24,9 @@ def search_jobs(query: str, company_id: Optional[str] = None):
 def search_candidates(query: str, company_id: Optional[str] = None):
 
     """Search candidates. Strictly requires a company_id."""
-    print("search candidate ")
     
-    # SECURITY CHECK: If no company_id is passed, return nothing.
+    
+   
     if not company_id or company_id == "":
         return "No results found. (Access restricted to Company HR only)"
 
@@ -46,7 +46,7 @@ def general_support(query: str):
     """
     Use this tool for general greetings (hi, hello) or small talk.
     """
-    # We return 'context' for the LLM to digest
+    
     return {
         "intent": "general questions or intent",
         "suggested_tone": "professional and encouraging",

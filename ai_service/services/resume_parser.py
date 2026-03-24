@@ -1,4 +1,3 @@
-# services/resume_parser.py
 import fitz
 from io import BytesIO
 

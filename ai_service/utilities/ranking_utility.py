@@ -60,7 +60,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
 
     candidate_scores = defaultdict(list)
 
-    # 🆕 store multiple chunks
     candidate_chunks = defaultdict(list)
 
     total = len(query_results["ids"][0])
@@ -81,8 +80,7 @@ async def perform_ranking_logic(job_id: str, company_id: str):
 
         candidate_scores[key].append(percentage_score)
 
-        # 🆕 collect chunks
-        if len(candidate_chunks[key]) < 3:  # limit chunks per candidate
+        if len(candidate_chunks[key]) < 3:  
             candidate_chunks[key].append(document)
 
     ranked = []
@@ -91,7 +89,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
 
         final_score = max(scores)
 
-        # 🆕 combine chunks
         combined_resume = "\n\n".join(candidate_chunks[(application_id, applicant_id)])
 
         ranked.append({
@@ -160,10 +157,8 @@ import asyncio
 
 
 async def rank_single_candidate(application_id: str, job_id: str, company_id: str):
-    print(f"[RANKING START] app={application_id}, job={job_id}, company={company_id}")
 
     try:
-        # 1. Get Job Embedding
         job_filter = {"$and": [{"job_id": job_id}, {"company_id": company_id}]}
         job_data = job_collection.get(
             where=job_filter,
@@ -180,13 +175,11 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
         documents = job_data.get("documents") or []
         job_text = documents[0] if documents else ""
 
-        print(f"[JOB] embedding_dim={len(jd_embedding)}, text_preview={job_text[:80]}")
 
-        # 2. Query Candidate Chunks (ONLY THIS, no .get())
         query_result = resume_collection.query(
             query_embeddings=[jd_embedding],
             where={"application_id": str(application_id)},
-            n_results=20,  # increased for better accuracy
+            n_results=20,  
             include=["distances", "documents"]
         )
 
@@ -198,20 +191,16 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
             or len(distances) == 0
             or len(distances[0]) == 0
         ):
-            print(f"[ERROR] No matching resume chunks found for {application_id}")
             return None
 
-        # 3. Compute Vector Score (FIXED for L2)
+       
         best_distance = min(distances[0])
         vector_score = round(100 / (1 + best_distance), 2)
 
-        print(f"[VECTOR SCORE] best_distance={best_distance}, score={vector_score}")
 
-        # 4. Prepare Resume for LLM
         top_docs = docs[0] if docs else []
-        combined_resume = "\n\n".join(top_docs[:5])  # top 5 chunks
+        combined_resume = "\n\n".join(top_docs[:5]) 
 
-        # 5. LLM Reranking
         final_score = vector_score
 
         try:
@@ -225,7 +214,7 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
 
             llm_results = await loop.run_in_executor(
                 None,
-                rerank_candidates,   # your existing function
+                rerank_candidates,  
                 job_text,
                 candidate_obj
             )
@@ -235,9 +224,8 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
 
         except Exception as llm_err:
             print(f"[LLM ERROR] {llm_err}")
-            final_score = vector_score  # fallback
+            final_score = vector_score  
 
-        print(f"[FINAL SCORE] app={application_id}, final={final_score}, vector={vector_score}")
 
         return {
             "application_id": application_id,

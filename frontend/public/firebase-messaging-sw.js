@@ -1,4 +1,4 @@
-console.log("not working")
+
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js");
 
@@ -14,10 +14,10 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-console.log("🔥 Firebase Messaging Service Worker Loaded");
+
 
 messaging.onBackgroundMessage(function(payload) {
-  console.log("📩 Background message received:", payload);
+
 
   const notificationTitle = payload.notification?.title || "New Notification";
   const notificationOptions = {

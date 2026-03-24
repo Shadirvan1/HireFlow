@@ -8,11 +8,9 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from .tools import search_jobs, search_candidates, general_support
 
 
-# --- TOOLS ---
 tools = [search_jobs, search_candidates, general_support]
 
 
-# --- Tier 1: Groq Primary ---
 llm1 = ChatGroq(
     model="llama-3.3-70b-versatile", 
     temperature=0,
@@ -24,14 +22,13 @@ llm2 = ChatGroq(
     groq_api_key=os.getenv("GROQ_API_KEY2")
 )
 
-# --- Tier 2: Groq Backup (Use 3.1 instead of decommissioned Llama 3) ---
 llm3 = ChatGroq(
-    model="llama-3.1-8b-instant", # Using the 8b version is better for backup as it has higher limits
+    model="llama-3.1-8b-instant", 
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY")
 )
 llm4 = ChatGroq(
-    model="llama-3.1-8b-instant", # Using the 8b version is better for backup as it has higher limits
+    model="llama-3.1-8b-instant", 
     temperature=0,
     groq_api_key=os.getenv("GROQ_API_KEY2")
 )
@@ -41,7 +38,6 @@ llm4 = ChatGroq(
 LLMS = [llm1, llm2, llm3, llm4]
 
 
-# --- FALLBACK EXECUTION ---
 async def call_llm_with_fallback(messages):
     last_error = None
 
@@ -53,7 +49,7 @@ async def call_llm_with_fallback(messages):
                 {"messages": messages},
                 config={"recursion_limit": 5}
             )
-            print(result)
+            
             return result
 
         except Exception as e:
@@ -64,10 +60,8 @@ async def call_llm_with_fallback(messages):
     raise last_error
 
 
-# --- CONCURRENCY ---
 global_semaphore = asyncio.Semaphore(2)
 
-# --- RATE LIMIT ---
 user_request_history: Dict[str, List[float]] = {}
 USER_MAX_REQUESTS = 5
 USER_WINDOW_SECONDS = 60
@@ -97,7 +91,6 @@ async def run_agent(
 
             user_request_history[user_id].append(now)
 
-            # --- SYSTEM MESSAGE ---
             if company_id and company_name:
                 system_message = (
                     "CRITICAL: If the user is just saying hi or hello, do NOT use any tools. "
@@ -112,11 +105,10 @@ async def run_agent(
                     "You are strictly FORBIDDEN from using 'search_candidates'."
                 )
 
-            # --- AGENT EXECUTION ---
             result = await call_llm_with_fallback(
                 [("system", system_message), ("human", message)]
             )
-            print(result["messages"][-1].content)
+        
             for msg in reversed(result["messages"]):
                 if hasattr(msg, "content") and msg.content:
                     if not msg.additional_kwargs.get("tool_calls"):

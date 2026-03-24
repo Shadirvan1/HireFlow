@@ -14,7 +14,6 @@ def send_notification(user, title, body, data=None):
     """
     fcm_token = getattr(user, "fcm_token", None)
     if not fcm_token:
-        print("FCM token does not exist for user:", getattr(user, "id", "unknown"))
         return
 
     sqs = boto3.client(
@@ -36,6 +35,5 @@ def send_notification(user, title, body, data=None):
             QueueUrl=os.getenv("SQS_URL"),
             MessageBody=json.dumps(message)
         )
-        print(f"Notification queued for user {getattr(user, 'id', 'unknown')}")
     except Exception as e:
         print(f"Error sending message to SQS: {e}")

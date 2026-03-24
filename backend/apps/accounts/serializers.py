@@ -8,6 +8,16 @@ from .services.mfa_service import verify_otp
 from .services.mfa_service import disable_mfa
 from django.db.models import Q
 from datetime import timezone
+from rest_framework import serializers
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .utilities import send_password_reset_email
+from firebase_admin import auth as firebase_auth
+
 User = get_user_model()
 
 
@@ -65,7 +75,6 @@ class SeekerSerializer(serializers.ModelSerializer):
         return user
 
 
-from datetime import date
 
 class CandidateProfileSerializer(serializers.ModelSerializer):
     user=SeekerSerializer(read_only=True)
@@ -354,9 +363,7 @@ class HRProfileSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
     
-import pyotp
-    
-from django.contrib.auth.hashers import check_password
+
 
 
 
@@ -391,30 +398,23 @@ class HRLoginSerializer(serializers.Serializer):
         return attrs
 
 
-# serializers.py
 
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from .models import Company, HRProfile
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError as DjangoValidationError
 
-User = get_user_model()
+
+
 
 class HRRegisterSerializer(serializers.ModelSerializer):
-    # User fields
+    
     email = serializers.EmailField()
     username = serializers.CharField(max_length=56)
     password = serializers.CharField(write_only=True, min_length=8)
 
-    # Company fields
     company_name = serializers.CharField(max_length=255)
     website = serializers.URLField(required=False, allow_blank=True)
     industry = serializers.CharField(max_length=255)
     company_size = serializers.CharField(max_length=100)
     headquarters = serializers.CharField(max_length=255)
 
-    # HR fields
     linkedin_url = serializers.URLField(required=False, allow_blank=True)
     designation = serializers.CharField(required=False, allow_blank=True)
     department = serializers.CharField(required=False, allow_blank=True)
@@ -437,9 +437,7 @@ class HRRegisterSerializer(serializers.ModelSerializer):
             "experience_years",
         ]
 
-    # ==============================
-    # 🔹 FIELD LEVEL VALIDATION
-    # ==============================
+
 
     def validate_email(self, value):
         value = value.lower().strip()
@@ -471,13 +469,10 @@ class HRRegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Invalid experience value.")
         return value
 
-    # ==============================
-    # 🔹 OBJECT LEVEL VALIDATION
-    # ==============================
+
 
     def validate(self, attrs):
 
-        # Prevent duplicate company creation
         company_name = attrs.get("company_name").strip()
 
         if not company_name:
@@ -485,7 +480,6 @@ class HRRegisterSerializer(serializers.ModelSerializer):
                 "company_name": "Company name is required."
             })
 
-        # Optional: prevent duplicate HR for same company + email domain logic
         industry = attrs.get("industry")
         if not industry:
             raise serializers.ValidationError({
@@ -494,14 +488,10 @@ class HRRegisterSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    # ==============================
-    # 🔹 CREATE METHOD (SAFE)
-    # ==============================
 
     @transaction.atomic
     def create(self, validated_data):
 
-        # Extract company data
         company_data = {
             "name": validated_data.pop("company_name").strip(),
             "website": validated_data.pop("website", ""),
@@ -510,7 +500,6 @@ class HRRegisterSerializer(serializers.ModelSerializer):
             "headquarters": validated_data.pop("headquarters"),
         }
 
-        # Extract HR data
         hr_data = {
             "linkedin_url": validated_data.pop("linkedin_url", ""),
             "designation": validated_data.pop("designation", ""),
@@ -520,7 +509,6 @@ class HRRegisterSerializer(serializers.ModelSerializer):
 
         password = validated_data.pop("password")
 
-        # Create User
         user = User.objects.create(
             role="HR",
             is_verified=False,
@@ -544,7 +532,6 @@ class HRRegisterSerializer(serializers.ModelSerializer):
 
         return user
 
-from .models import Invite
 
 class InviteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -663,7 +650,6 @@ class EnableMFASerializer(serializers.Serializer):
 
         return attrs
 
-from firebase_admin import auth as firebase_auth
 
 
 class FirebaseVerifySerializer(serializers.Serializer):
@@ -675,7 +661,6 @@ class FirebaseVerifySerializer(serializers.Serializer):
         except Exception:
             raise serializers.ValidationError("Invalid Firebase token")
 
-        # Store decoded token for later use
         self.context["decoded_token"] = decoded_token
         return value
 
@@ -709,11 +694,9 @@ class RegisterViaInviteSerializer(serializers.Serializer):
         if not invite:
             raise serializers.ValidationError("Invalid or expired invite")
 
-        # Optional: prevent duplicate email
         if User.objects.filter(email=attrs["email"]).exists():
             raise serializers.ValidationError({"email": "Email already exists"})
 
-        # Store invite for use in create()
         self.context["invite"] = invite
         return attrs
 
@@ -724,7 +707,6 @@ class RegisterViaInviteSerializer(serializers.Serializer):
         email = validated_data["email"]
         password = validated_data["password"]
 
-        # Create user
         user = User.objects.create_user(
             email=email,
             password=password,
@@ -734,14 +716,12 @@ class RegisterViaInviteSerializer(serializers.Serializer):
             is_verified=True,
         )
 
-        # Create HR Profile
         HRProfile.objects.create(
             user=user,
             company=invite.company,
             role="HR" if invite.role == "HR" else "INTERVIEWER"
         )
 
-        # Mark invite as used
         invite.is_used = True
         invite.save()
 
@@ -752,13 +732,6 @@ class RegisterViaInviteSerializer(serializers.Serializer):
         }
 
 
-from rest_framework import serializers
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
-from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
-User = get_user_model()
 
 
 class ResetPasswordSerializer(serializers.Serializer):
@@ -779,7 +752,6 @@ class ResetPasswordSerializer(serializers.Serializer):
         if not PasswordResetTokenGenerator().check_token(user, token):
             raise serializers.ValidationError({"error": "Token invalid or expired"})
 
-        # Store user for use in save()
         self.context["user"] = user
         return attrs
 
@@ -794,11 +766,6 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 
-from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from .utilities import send_password_reset_email
-
-User = get_user_model()
 
 
 class ForgotPasswordSerializer(serializers.Serializer):

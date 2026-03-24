@@ -31,7 +31,6 @@ def initialize_firebase():
 
 def lambda_handler(event, context):
     initialize_firebase()
-    print("Event received:", event)
 
     for record in event["Records"]:
         try:
@@ -43,7 +42,6 @@ def lambda_handler(event, context):
             data_payload = body.get("data", {})
 
             if not fcm_token:
-                print("Missing FCM token")
                 continue
 
             message = messaging.Message(
@@ -56,7 +54,6 @@ def lambda_handler(event, context):
             )
 
             response = messaging.send(message)
-            print("Successfully sent message:", response)
 
         except FirebaseError as e:
             print("Firebase error:", str(e))

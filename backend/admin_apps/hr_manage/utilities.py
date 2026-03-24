@@ -1,8 +1,8 @@
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-import logging
 
-logger = logging.getLogger(__name__)
+
+
 
 
 def send_hr_approval_email(user):

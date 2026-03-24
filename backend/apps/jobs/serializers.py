@@ -11,21 +11,18 @@ class JobSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["company", "created_at", "updated_at"]
 
-    # 1. Experience Validation (Already existing, slightly improved)
     def get_is_saved(self, obj):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            # Replace 'SavedJob' with your actual model name for saved jobs
             return SavedJob.objects.filter(user=request.user, job=obj).exists()
         return False
     def validate_experience_required(self, value):
         if value < 0:
             raise serializers.ValidationError("Experience cannot be negative.")
-        if value > 45: # Adjusted to a more realistic cap
+        if value > 45: 
             raise serializers.ValidationError("Please enter a valid experience range (0-45).")
         return value
 
-    # 2. Deadline Validation (New)
     def validate_deadline(self, value):
         if value and value < timezone.now().date():
             raise serializers.ValidationError("The application deadline cannot be in the past.")
@@ -115,16 +112,16 @@ from rest_framework import serializers
 from .models import JobApplication
 
 class UpdateApplicationStatusSerializer(serializers.Serializer):
-    application_id = serializers.IntegerField() # Use IntegerField if your ID is a number
+    application_id = serializers.IntegerField() 
     status = serializers.CharField(max_length=50)
     meeting_link = serializers.URLField(required=False, allow_blank=True)
     scheduled_at = serializers.DateTimeField(required=False, allow_null=True)
 
     def validate_application_id(self, value):
         try:
-            # Check if the application exists
+            
             application = JobApplication.objects.get(id=value)
-            return application # Returning the object saves a DB hit in the view
+            return application 
         except (JobApplication.DoesNotExist, ValueError):
             raise serializers.ValidationError("Application not found")
 
@@ -135,7 +132,6 @@ class UpdateApplicationStatusSerializer(serializers.Serializer):
         application = self.validated_data['application_id']
         application.status = self.validated_data['status']
         
-        # Only update these if they are provided in the request
         if 'meeting_link' in self.validated_data:
             application.meeting_link = self.validated_data['meeting_link']
         if 'scheduled_at' in self.validated_data:
@@ -144,10 +140,9 @@ class UpdateApplicationStatusSerializer(serializers.Serializer):
         application.save()
         return application
 
-# In your serializers.py
+
 
 class JobApplicationReadSerializer(serializers.ModelSerializer):
-    # We reuse your existing JobSerializer to get Title, Location, and Company
     job = JobSerializer(read_only=True) 
     
     class Meta:
@@ -180,20 +175,17 @@ from .models import JobApplication, Job
 from apps.accounts.models import CandidateProfile
 
 class FullCandidateDetailSerializer(serializers.ModelSerializer):
-    # Joining data from CandidateProfile and the Auth User
     applicant_name = serializers.CharField(source='applicant.user.username', read_only=True)
     first_name = serializers.CharField(source='applicant.first_name', read_only=True)
     last_name = serializers.CharField(source='applicant.last_name', read_only=True)
     email = serializers.EmailField(source='applicant.user.email', read_only=True)
     phone = serializers.CharField(source='applicant.user.phone_number', read_only=True)
     
-    # Candidate Profile specific fields
     location = serializers.CharField(source='applicant.current_location', read_only=True)
     experience = serializers.FloatField(source='applicant.total_experience', read_only=True)
     linkedin = serializers.URLField(source='applicant.linkedin_url', read_only=True)
     github = serializers.URLField(source='applicant.github_url', read_only=True)
     
-    # Job details
     job_title = serializers.CharField(source='job.title', read_only=True)
 
     class Meta:
@@ -208,13 +200,11 @@ class FullCandidateDetailSerializer(serializers.ModelSerializer):
 class ApplicationStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = JobApplication
-        # Explicitly listing all three fields to be updated
         fields = ['status', 'scheduled_at', 'meeting_link']
 
 
 
     def validate_status(self, value):
-        # Extract choices directly from the model field
         valid_statuses = [choice[0] for choice in JobApplication._meta.get_field('status').choices]
         if value not in valid_statuses:
             raise serializers.ValidationError(f"Invalid status. Choose from: {valid_statuses}")

@@ -14,7 +14,6 @@ export default function AIChatButton() {
   
   const scrollRef = useRef(null);
 
-  // Fetch initial history
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       fetchHistory();
@@ -24,7 +23,7 @@ export default function AIChatButton() {
   const fetchHistory = async (timestamp = null) => {
     setIsLoadingHistory(true);
     try {
-      // Pass the timestamp as a query param if it exists
+      
       const url = timestamp ? `/ai/chat/?last_timestamp=${timestamp}` : "/ai/chat/";
       const response = await api.get(url);
       

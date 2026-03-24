@@ -15,11 +15,11 @@ API_KEY = os.getenv("SECRET_KEY")
 api_key_header = APIKeyHeader(name="X-API-KEY")
 
 def get_api_key(api_key: str = Security(api_key_header)):
-    print(f"Received API Key: {api_key}")  
+    
     if api_key == API_KEY:
-        print("API Key is valid")
+        
         return api_key
-    print("Invalid API Key")
+    
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
 
 

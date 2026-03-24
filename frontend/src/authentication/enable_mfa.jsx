@@ -14,7 +14,6 @@ export default function SetupMFA() {
         setOtpUri(res.data.otp_uri);
 
       } catch (err) {
-        console.log(err.response?.data);
         setMessage(err.response?.data?.error || "Failed to load MFA setup");
       }
     }

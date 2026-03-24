@@ -6,7 +6,19 @@ from apps.accounts.models import HRProfile
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated
 from apps.jobs.models import Job, JobApplication
-# Create your views here.
+from django.db.models import Count, Q
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Count, Q
+from apps.jobs.models import Job, JobApplication, SavedJob
+from django.utils import timezone
+from apps.accounts.models import CandidateProfile, HRProfile
+
+
 User = get_user_model()
 
 class AllCompanyEmployeesView(views.APIView):
@@ -49,13 +61,11 @@ class ToggleEmployeeRoleView(views.APIView):
         if not id:
             return Response({"error": "Employee ID is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. Fetch the target HRProfile
         try:
             toggled_user = HRProfile.objects.get(id=id)
         except HRProfile.DoesNotExist:
             return Response({"error": "Employee not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # 2. Initialize Serializer with context
         serializer = UpdateApplicationStatusSerializer(
             data=request.data, 
             context={'request': request, 'toggled_user': toggled_user}
@@ -148,53 +158,105 @@ class NotificationDetailAPIView(views.APIView):
         )
 
 
-from django.db.models import Count, Q
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
 
-class HRDashboardStatsView(APIView):
+class CandidateDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request, version):
         user = request.user
-        # Ensure the user is actually HR and has a company
-        try:
-            hr_profile = user.hr_profile
-            company = hr_profile.company
-        except HRProfile.DoesNotExist:
-            return Response({"error": "User is not an HR member"}, status=403)
-
-        # 1. Job Stats
-        total_jobs = Job.objects.filter(company=company).count()
-        active_jobs = Job.objects.filter(company=company, is_active=True).count()
-
-        # 2. Application Stats
-        # We look for applications linked to jobs belonging to this HR's company
-        apps_query = JobApplication.objects.filter(job__company=company)
+       
+        profile = getattr(user, 'candidate_profile', None)
         
-        total_applications = apps_query.count()
-        status_breakdown = apps_query.values('status').annotate(count=Count('status'))
+        if not profile:
+            return Response({"error": "Candidate profile not found"}, status=404)
 
-        # 3. Recent Applications
-        recent_apps = apps_query.select_related('applicant', 'job').order_by('-applied_at')[:5]
-        recent_data = [
-            {
-                "candidate": f"{app.applicant.first_name} {app.applicant.last_name}",
-                "job_title": app.job.title,
-                "status": app.status,
-                "applied_at": app.applied_at
-            } for app in recent_apps
-        ]
+        applications = JobApplication.objects.filter(applicant=profile)
+        
+        stats = {
+            "total_applications": applications.count(),
+            "interviews_scheduled": applications.filter(status="SCHEDULED").count(),
+            "offers_received": applications.filter(status="HIRED").count(),
+            "saved_jobs_count": SavedJob.objects.filter(user=user).count(),
+        }
+
+        
+        recent_applications = applications.select_related('job', 'job__company').order_by('-applied_at')[:5]
+        app_list = [{
+            "job_title": app.job.title,
+            "company": app.job.company.name,
+            "status": app.status,
+            "applied_at": app.applied_at,
+            "meeting_link": app.meeting_link if app.status == "SCHEDULED" else None
+        } for app in recent_applications]
 
         return Response({
-            "company_name": company.name,
-            "stats": {
-                "total_jobs": total_jobs,
-                "active_jobs": active_jobs,
-                "total_applications": total_applications,
-                "pipeline": {item['status']: item['count'] for item in status_breakdown}
-            },
-            "recent_applications": recent_data
+            "metrics": stats,
+            "recent_applications": app_list
+        })
+class HRDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, version):
+        user = request.user
+        hr_profile = getattr(user, 'hr_profile', None)
+        
+        if not hr_profile or not hr_profile.company:
+            return Response({"error": "HR profile or Company not linked"}, status=404)
+
+        company = hr_profile.company
+        jobs = Job.objects.filter(company=company)
+        
+        stats = {
+            "active_jobs": jobs.filter(is_active=True).count(),
+            "total_applicants": JobApplication.objects.filter(job__company=company).count(),
+            "pending_reviews": JobApplication.objects.filter(job__company=company, status="APPLIED").count(),
+            "hires_to_date": hr_profile.hires_count
+        }
+
+        hot_jobs = jobs.annotate(app_count=Count('applications')).order_by('-app_count')[:3]
+        hot_jobs_list = [{
+            "title": j.title,
+            "count": j.app_count,
+            "is_active": j.is_active
+        } for j in hot_jobs]
+
+        return Response({
+            "metrics": stats,
+            "top_performing_jobs": hot_jobs_list,
+            "company_name": company.name
+        })
+
+
+class InterviewerDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, version):
+        user = request.user
+        
+        
+        upcoming_interviews = JobApplication.objects.filter(
+            interviewer=user,
+            status="SCHEDULED",
+            scheduled_at__gte=timezone.now()
+        ).select_related('job', 'applicant__user').order_by('scheduled_at')
+
+        stats = {
+            "upcoming_interviews_count": upcoming_interviews.count(),
+            "completed_this_month": JobApplication.objects.filter(
+                interviewer=user, 
+                applied_at__month=timezone.now().month
+            ).exclude(status="SCHEDULED").count()
+        }
+
+        schedule = [{
+            "candidate_name": f"{intv.applicant.first_name} {intv.applicant.last_name}",
+            "job_title": intv.job.title,
+            "time": intv.scheduled_at,
+            "link": intv.meeting_link
+        } for intv in upcoming_interviews]
+
+        return Response({
+            "metrics": stats,
+            "schedule": schedule
         })

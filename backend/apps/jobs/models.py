@@ -91,7 +91,7 @@ class JobApplication(models.Model):
         related_name="job_applications"
     )
 
-    # ✅ FIXED STORAGE (PUBLIC CLOUDINARY)
+ 
     resume = models.FileField(
         upload_to=job_application_resume_upload,
         storage=PublicRawMediaCloudinaryStorage(),

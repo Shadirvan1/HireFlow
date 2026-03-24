@@ -6,11 +6,10 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 
-# ✅ Cloudinary
+
 from cloudinary_storage.storage import MediaCloudinaryStorage
 from utils.cloudinary_storage import PublicRawMediaCloudinaryStorage
 
-# ================= USER MANAGER =================
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -28,7 +27,6 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault("role", "ADMIN")
         return self.create_user(email, password, **extra_fields)
 
-# ================= UPLOAD PATHS =================
 
 def company_logo_upload(instance, filename):
     ext = os.path.splitext(filename)[1]
@@ -49,7 +47,6 @@ def candidate_profile_image_upload(instance, filename):
     user_id = instance.user.id if instance.user else "unknown"
     return f"candidate_profile/user_{user_id}/{uuid.uuid4()}{ext}"
 
-# ================= MODELS =================
 
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = (
@@ -102,7 +99,7 @@ class Company(models.Model):
 
     logo = models.ImageField(
         upload_to=company_logo_upload,
-        storage=MediaCloudinaryStorage(),  # ✅ correct
+        storage=MediaCloudinaryStorage(),  
         null=True,
         blank=True
     )
@@ -127,15 +124,15 @@ class HRProfile(models.Model):
 
     profile_image = models.ImageField(
         upload_to=hr_profile_image_upload,
-        storage=MediaCloudinaryStorage(),  # ✅ correct
+        storage=MediaCloudinaryStorage(), 
         blank=True,
         null=True
     )
 
-    # ✅ FIXED HERE
+    
     certifications = models.FileField(
         upload_to=hr_certification_upload,
-        storage=PublicRawMediaCloudinaryStorage(),  # 🔥 FIX
+        storage=PublicRawMediaCloudinaryStorage(), 
         blank=True,
         null=True
     )
@@ -170,7 +167,7 @@ class CandidateProfile(models.Model):
 
     profile_image = models.ImageField(
         upload_to=candidate_profile_image_upload,
-        storage=MediaCloudinaryStorage(),  # ✅ correct
+        storage=MediaCloudinaryStorage(),  
         blank=True,
         null=True
     )

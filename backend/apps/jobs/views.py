@@ -281,14 +281,11 @@ class ApplicationStatusView(APIView):
     permission_classes = []
 
     def post(self, request, version):
-        print("Application status callback received from n8n")
 
-        # Security Check
         callback_key = request.headers.get('X-CALLBACK-KEY')
         if callback_key != settings.N8N_CALLBACK_SECRET:
             return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Validation
         serializer = UpdateApplicationStatusSerializer(data=request.data)
         if serializer.is_valid():
             data = serializer.validated_data
@@ -298,7 +295,7 @@ class ApplicationStatusView(APIView):
             try:
                 application = JobApplication.objects.get(id=application_id)
 
-                # Status Mapping
+               
                 if incoming_status == "INTERVIEW_SCHEDULED":
                     application.status = "SCHEDULED"
                     application.meeting_link = data.get("meeting_link")
@@ -379,12 +376,9 @@ class ScheduledInterviewsAPIView(APIView):
         user = request.user
         user_role = getattr(user, 'role', None)
 
-        # Base queryset (only scheduled interviews)
         queryset = JobApplication.objects.filter(status="SCHEDULED")
 
-        # 🔐 Role-based filtering
         if user_role == "HR":
-            # HR sees all
             pass
 
         elif user_role == "INTERVIEWER":
@@ -396,16 +390,13 @@ class ScheduledInterviewsAPIView(APIView):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Optional: filter only upcoming interviews
         upcoming_only = request.query_params.get("upcoming", "false").lower()
 
         if upcoming_only == "true":
             queryset = queryset.filter(scheduled_at__gte=timezone.now())
 
-        # Order by interview date
         queryset = queryset.order_by("scheduled_at")
 
-        # Serialize data
         serializer = ScheduledInterviewSerializer(queryset, many=True)
 
         return Response({
@@ -420,22 +411,19 @@ class InterviewersListView(APIView):
 
     def get(self, request, version):
             try:
-                # 1. Get the company of the logged-in HR/User
-                # We look at the HRProfile of the person making the request
+               
                 current_user_profile = request.user.hr_profile
                 user_company = current_user_profile.company
 
                 if not user_company:
                     return Response({"error": "User is not associated with a company"}, status=400)
 
-                # 2. Fetch all HRProfiles in the SAME company
-                # We can filter for specific roles if needed (e.g., HR and INTERVIEWER)
                 company_members = HRProfile.objects.filter(
                     company=user_company,
                     is_active=True
                 ).select_related('user')
 
-                # 3. Format the data for the frontend
+                
                 interviewers_list = []
                 for profile in company_members:
                     interviewers_list.append({
@@ -470,7 +458,7 @@ class AssignInterviewerView(APIView):
 
         interviewer_id = request.data.get("interviewer_id")
 
-        # 🔹 Assign interviewer
+        
         if interviewer_id:
             try:
                 user = User.objects.get(id=interviewer_id)
@@ -480,7 +468,7 @@ class AssignInterviewerView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            # Optional: check role
+           
             if getattr(user, "role", None) != "INTERVIEWER":
                 return Response(
                     {"error": "User is not an interviewer"},
@@ -528,7 +516,7 @@ class CandidateApplicationDetailView(APIView):
             return get_object_or_404(
                 JobApplication.objects.select_related("job", "job__company"),
                 id=pk,
-                job__company__hr_members__user=user   # 🔥 FIX
+                job__company__hr_members__user=user   
             )
 
         return None

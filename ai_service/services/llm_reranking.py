@@ -11,7 +11,6 @@ def rerank_candidates(job_text, candidates):
 
     def run_rerank():
 
-        print("--- 1. Entering rerank_candidates ---")
 
         subset = candidates[:10]
 
@@ -61,7 +60,6 @@ CANDIDATES:
 {json.dumps(simplified)}
 """
 
-        print("--- 2. Calling Groq API ---")
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -75,17 +73,12 @@ CANDIDATES:
 
         content = response.choices[0].message.content
 
-        print("--- Raw Response ---")
-        print(content)
 
-        # Remove markdown blocks
         content = re.sub(r"```json", "", content)
         content = re.sub(r"```", "", content)
 
-        # Remove comments
         content = re.sub(r"//.*", "", content)
 
-        # Fix trailing commas
         content = re.sub(r",\s*}", "}", content)
         content = re.sub(r",\s*]", "]", content)
 
@@ -94,11 +87,9 @@ CANDIDATES:
         try:
             data = json.loads(content)
 
-            print("--- JSON Parsed ---")
 
             rankings = data.get("rankings", [])
 
-            # Validate IDs
             valid_ids = set(candidate_ids)
 
             rankings = [
@@ -123,7 +114,7 @@ CANDIDATES:
             return result
 
     except concurrent.futures.TimeoutError:
-        print("Groq reranking timeout (5 seconds)")
+        
         return None
 
     except Exception as e:

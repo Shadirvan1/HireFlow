@@ -24,7 +24,6 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def generate_embedding(text: str):
-    print(f"Generating embedding for text: {text[:50]}...")
    
 
     response = client.models.embed_content(
@@ -36,10 +35,3 @@ def generate_embedding(text: str):
     return response.embeddings[0].values
 
 
-# TEST TEXT
-# text = "Python developer with FastAPI and Docker experience"
-
-# embedding = generate_embedding(text)
-
-# print("Embedding length:", len(embedding))
-# print("First 5 numbers:", embedding[:5])

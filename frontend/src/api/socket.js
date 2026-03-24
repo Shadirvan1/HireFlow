@@ -19,16 +19,14 @@ export const connectSocket = (userId, onMessage) => {
         const isAlive = socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING;
 
         if (isSameUser && isAlive) {
-            console.log("💎 Socket already alive for user:", userId);
+           
             return; // EXIT HERE. Do not close, do not reconnect.
         }
 
         // 2. If it's a different user OR the socket is dead, clean up before new connection
-        console.log(isSameUser ? "🛠 Resetting dead socket..." : "🔁 Switching users...");
         socket.close();
     }
 
-    console.log("🌐 Connecting to:", targetUrl);
     socket = new WebSocket(targetUrl);
 
     socket.onopen = () => {
@@ -38,7 +36,7 @@ export const connectSocket = (userId, onMessage) => {
     socket.onmessage = (event) => {
         try {
             const data = JSON.parse(event.data);
-            // console.log("📩 MESSAGE RECEIVED:", data); // Debugging
+            
             if (currentCallback) {
                 currentCallback(data);
             }
@@ -62,8 +60,8 @@ export const connectSocket = (userId, onMessage) => {
 
 export const disconnectSocket = () => {
     if (socket) {
-        console.log("🔌 Manual Disconnect");
-        socket.close(1000); // Use normal closure code
+        
+        socket.close(1000); 
         socket = null;
         currentCallback = null;
     }

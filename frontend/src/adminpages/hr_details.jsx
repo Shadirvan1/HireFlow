@@ -37,7 +37,7 @@ export default function HRDetails() {
       console.error("Reject failed:", error);
     }
   };
- console.log(data)
+ 
   if (loading) {
     return <div className="p-6 text-lg">Loading HR details...</div>;
   }

@@ -49,7 +49,7 @@ export default function CandidateProfileView() {
     try {
       await api.post("accounts/logout/");
     } catch (e) {
-      console.log("Backend logout failed, proceeding with local logout");
+      
     } finally {
       localStorage.clear();
       dispatch(logout());

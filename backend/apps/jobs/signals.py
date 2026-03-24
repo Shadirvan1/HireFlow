@@ -1,7 +1,6 @@
-# jobs/signals.py
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.conf import settings  # <--- Add this
+from django.conf import settings  
 import requests
 import os 
 from .models import Job, JobApplication
@@ -10,12 +9,10 @@ from apps.accounts.models import HRProfile
 
 FASTAPI_URL ="http://ai_service:8002/api/ai" 
 
-# Define the common headers here
 def get_auth_headers():
     return {
         "X-API-KEY": settings.SECRET_KEY,
-        # Note: Do NOT add 'Content-Type' here if you are sending 'files=' 
-        # because requests adds the boundary automatically.
+    
     }
 
 @receiver(post_save, sender=Job)
@@ -42,8 +39,7 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
         }
 
         try:
-            print(FASTAPI_URL)
-            # --- ADDED HEADERS HERE ---
+           
             response = requests.post(
                 f"{FASTAPI_URL}/process-job",
                 json=payload,
@@ -82,7 +78,6 @@ import requests
 
 @receiver(post_save, sender=JobApplication)
 def send_resume_for_ranking(sender, instance, created, **kwargs):
-    print(f"Processing resume for application {instance.id}")
 
     if not created or not instance.resume:
         return
@@ -90,7 +85,6 @@ def send_resume_for_ranking(sender, instance, created, **kwargs):
     job = instance.job
 
     if not job.embedd_id:
-        print(f"Job {job.id} does not have embedding ID. Skipping.")
         return
 
     try:
@@ -113,26 +107,22 @@ def send_resume_for_ranking(sender, instance, created, **kwargs):
             "hr_email": interviewer_email,
         }
 
-        print("Generating signed URL and fetching resume from Cloudinary...")
 
-        # ✅ FIX: Use the signed URL instead of the public .url
         signed_url = get_signed_resume_url(instance)
         file_response = requests.get(signed_url, timeout=10)
         file_response.raise_for_status()
 
         files = {
-            # We send the binary content fetched from Cloudinary to FastAPI
             'file': (instance.resume.name, file_response.content)
         }
 
-        print("Sending to AI service...")
 
         response = requests.post(
             f"{FASTAPI_URL}/process-resume",
             files=files,
             data=data,
             headers=get_auth_headers(),
-            timeout=20  # Increased timeout for AI processing
+            timeout=20  
         )
 
         response.raise_for_status()

@@ -3,9 +3,9 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-import logging
+
 import os
-logger = logging.getLogger(__name__)
+
 url = os.getenv("FRONT_END_URL_VERIFY")
 FRONTEND_URL = os.getenv("FRONT_END_URL")
 
