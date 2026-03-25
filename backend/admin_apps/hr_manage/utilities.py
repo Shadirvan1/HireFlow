@@ -84,8 +84,8 @@ def send_hr_approval_email(user):
         email.attach_alternative(html_content, "text/html")
         email.send()
 
-        logger.info(f"Approval email sent to {user.email}")
+        
 
     except Exception as e:
-        logger.error(f"Failed to send approval email to {user.email}: {str(e)}")
+        print(f"Failed to send approval email to {user.email}: {str(e)}")
         raise

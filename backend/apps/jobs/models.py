@@ -111,7 +111,7 @@ class JobApplication(models.Model):
         ],
         default="APPLIED"
     )
-
+    score = models.FloatField(null=True, blank=True)
     scheduled_at = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(null=True, blank=True)
     interviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -123,6 +123,16 @@ class JobApplication(models.Model):
 
     def __str__(self):
         return f"{self.applicant} - {self.job}"
+
+class InterviewScore(models.Model):
+    application = models.ForeignKey(JobApplication, on_delete=models.CASCADE)
+    
+    communication = models.IntegerField()
+    technical = models.IntegerField()
+    practical = models.IntegerField()
+    attitude = models.IntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class SavedJob(models.Model):

@@ -62,6 +62,7 @@ class AIChatView(APIView):
                 headers={"X-API-KEY": settings.SECRET_KEY},
                 timeout=30
             )
+            
 
             if response.status_code != 200:
                 return Response({"error": "AI Service Error"}, status=502)

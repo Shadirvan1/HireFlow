@@ -17,6 +17,7 @@ export default function UnifiedDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  console.log(data)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -26,7 +27,6 @@ export default function UnifiedDashboard() {
         setLoading(true);
         setError(null);
         
-        // 2. Determine endpoint based on normalized role
         const endpoint = normalizedRole === "hr" 
           ? "management/hr-dashboard/" 
           : "management/interviewer-dashboard/";
@@ -108,7 +108,7 @@ export default function UnifiedDashboard() {
   );
 }
 
-// --- HR VIEW ---
+
 function HrView({ data, navigate }) {
   return (
     <div className="animate-in fade-in duration-500">

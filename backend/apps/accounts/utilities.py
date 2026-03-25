@@ -1,3 +1,4 @@
+from celery import shared_task
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
@@ -9,6 +10,8 @@ import os
 url = os.getenv("FRONT_END_URL_VERIFY")
 FRONTEND_URL = os.getenv("FRONT_END_URL")
 
+
+@shared_task
 def send_verification_email(user):
     """
     Sends account verification email using normal SMTP.
@@ -71,12 +74,14 @@ def send_verification_email(user):
         email.attach_alternative(html_content, "text/html")
         email.send()
 
-        logger.info(f"Verification email sent to {user.email}")
+        print(f"Verification email sent to {user.email}")
 
     except Exception as e:
-        logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
+        print(f"Failed to send verification email to {user.email}: {str(e)}")
         raise
 
+
+@shared_task
 def send_password_reset_email(user):
     """
     Sends a professional password reset email.
@@ -185,8 +190,8 @@ HireFlow Team
         email.attach_alternative(html_content, "text/html")
         email.send()
 
-        logger.info(f"Password reset email sent to {user.email}")
+        print(f"Password reset email sent to {user.email}")
 
     except Exception as e:
-        logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
+        print(f"Failed to send password reset email to {user.email}: {str(e)}")
         raise

@@ -26,3 +26,10 @@ async def chat(request: ChatRequest):
     
     
     return result
+
+
+class ScoreInput(BaseModel):
+    application_id: int
+    job_embedd_id: int
+    scores: dict
+

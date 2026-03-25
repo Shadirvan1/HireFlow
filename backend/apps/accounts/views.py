@@ -41,7 +41,7 @@ from .serializers import (
 
 )
 
-from .utilities import send_verification_email, send_password_reset_email
+from .utilities import send_verification_email
 from .services.jwt_service import create_tokens_for_user, set_tokens_in_response, refresh_tokens
 from .services.mfa_service import (
     generate_mfa_secret,
@@ -69,7 +69,7 @@ class SeekerRegisterView(views.APIView):
         if serializer.is_valid():
             user = serializer.save()
             if not user.is_verified:
-                send_verification_email(user)
+                send_verification_email.delay(user)
             return Response(
                 {
                     "message": "Activation link sent successfully.",
@@ -89,7 +89,7 @@ class ResendEmailLinkView(views.APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        send_verification_email(user)
+        send_verification_email.delay(user)
 
         return Response(
             {"message": "Verification link sent successfully"},

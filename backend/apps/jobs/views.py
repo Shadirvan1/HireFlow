@@ -283,7 +283,7 @@ class ApplicationStatusView(APIView):
     def post(self, request, version):
 
         callback_key = request.headers.get('X-CALLBACK-KEY')
-        if callback_key != settings.N8N_CALLBACK_SECRET:
+        if callback_key != settings.SECRET_KEY:
             return Response({"error": "Forbidden"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = UpdateApplicationStatusSerializer(data=request.data)
@@ -291,9 +291,10 @@ class ApplicationStatusView(APIView):
             data = serializer.validated_data
             application_id = data["application_id"]
             incoming_status = data["status"]
+            print(application_id, incoming_status)
 
             try:
-                application = JobApplication.objects.get(id=application_id)
+                application = JobApplication.objects.get(id=application_id.id)
 
                
                 if incoming_status == "INTERVIEW_SCHEDULED":
@@ -567,3 +568,72 @@ class CandidateApplicationDetailView(APIView):
             }, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+from .models import Application, InterviewScore
+from .serializers import InterviewScoreSerializer
+
+
+class SubmitInterviewScoreView(APIView):
+    permission_classes = []
+
+    def post(self, request, application_id):
+        data = request.data.copy()
+        data["application_id"] = application_id
+
+        serializer = InterviewScoreSerializer(data=data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+
+        validated = serializer.validated_data
+
+        
+        interview_score = InterviewScore.objects.create(
+            application_id=validated["application_id"],
+            communication=validated["communication"],
+            technical=validated["technical"],
+            practical=validated["practical"],
+            attitude=validated["attitude"]
+        )
+        try:
+            job_id = JobApplication.objects.get(id=application_id).job.embedd_id
+        except JobApplication.DoesNotExist:
+            return Response({"error": "Application not found"}, status=404)
+       
+        try:
+
+            ai_response = requests.post(
+                f"{FASTAPI_URL}/evaluate",
+                json={
+                    "application_id": application_id,
+                    "job_embedd_id": job_id,
+                    "scores": {
+                        "communication": validated["communication"],
+                        "technical": validated["technical"],
+                        "practical": validated["practical"],
+                        "attitude": validated["attitude"],
+                    }
+                },
+                timeout=5
+            )
+
+            ai_data = ai_response.json()
+            print(ai_data)
+
+        except Exception as e:
+            return Response({
+                "error": "AI service failed",
+                "details": str(e)
+            }, status=500)
+
+        
+        Application.objects.filter(id=application_id).update(
+            status=ai_data.get("status", "HOLD"),
+            score=ai_data.get("final_score", 0)
+        )
+
+        return Response({
+            "message": "Score submitted successfully",
+            "ai_result": ai_data
+        }, status=200)

@@ -17,6 +17,19 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .utilities import send_password_reset_email
 from firebase_admin import auth as firebase_auth
+import os
+from datetime import date
+import pyotp
+    
+from django.contrib.auth.hashers import check_password
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+from .models import Company, HRProfile
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from .models import Invite
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 User = get_user_model()
 
@@ -565,13 +578,14 @@ class GoogleAuthSerializer(serializers.Serializer):
         if not token:
             raise serializers.ValidationError({"error": "No token provided"})
 
-        google_id = os.getenv("GOOGLE_CLIENT_ID")
+        google_id = os.getenv("GOOGLE_AUTH_CLIENT_ID")
 
         try:
             idinfo = id_token.verify_oauth2_token(
                 token, google_requests.Request(), google_id
             )
-        except ValueError:
+        except ValueError as e:
+            print(f"Google Auth Validation Error: {e}")
             raise serializers.ValidationError({"error": "Token verification failed"})
 
         email = idinfo.get("email")
@@ -788,6 +802,6 @@ class ForgotPasswordSerializer(serializers.Serializer):
         user = self.context.get("user")
 
         if user:
-            send_password_reset_email(user)
+            send_password_reset_email.delay(user)
 
         return True

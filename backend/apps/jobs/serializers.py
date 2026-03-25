@@ -2,6 +2,8 @@ from rest_framework import serializers
 from .models import Job,SavedJob
 from django.utils import timezone
 from apps.accounts.serializers import CompanySerializer,CandidateProfileSerializer
+from .models import InterviewScore
+
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     is_saved = serializers.SerializerMethodField()
@@ -209,3 +211,24 @@ class ApplicationStatusUpdateSerializer(serializers.ModelSerializer):
         if value not in valid_statuses:
             raise serializers.ValidationError(f"Invalid status. Choose from: {valid_statuses}")
         return value
+
+
+class InterviewScoreSerializer(serializers.Serializer):
+    application_id = serializers.IntegerField()
+    
+    communication = serializers.IntegerField(min_value=0, max_value=10)
+    technical = serializers.IntegerField(min_value=0, max_value=10)
+    practical = serializers.IntegerField(min_value=0, max_value=10)
+    attitude = serializers.IntegerField(min_value=0, max_value=10)
+
+    def validate(self, data):
+        # Optional: extra validation
+        if sum([
+            data["communication"],
+            data["technical"],
+            data["practical"],
+            data["attitude"]
+        ]) == 0:
+            raise serializers.ValidationError("All scores cannot be zero")
+
+        return data
