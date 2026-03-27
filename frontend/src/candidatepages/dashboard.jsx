@@ -6,8 +6,10 @@ import {
 } from "react-icons/fi";
 import api from "../api/api"; 
 import { toast, Toaster } from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 export default function CandidateDashboard() {
+ 
   const [data, setData] = useState({
     metrics: {
       total_applications: 0,
@@ -20,7 +22,9 @@ export default function CandidateDashboard() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+
   useEffect(() => {
+
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
@@ -35,7 +39,7 @@ export default function CandidateDashboard() {
       }
     };
     fetchDashboardData();
-  }, []);
+  }, [authChecked, isAuthenticated]);
 
   if (loading) {
     return (

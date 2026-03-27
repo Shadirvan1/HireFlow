@@ -46,7 +46,7 @@ const CandidateDetailPage = () => {
       });
     } catch (err) {
       toast.error("Profile not found");
-      navigate("/rankings");
+      navigate("/hr/applications");
     } finally {
       setLoading(false);
     }

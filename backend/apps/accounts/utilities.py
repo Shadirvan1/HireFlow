@@ -4,7 +4,8 @@ from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 from django.core.mail import EmailMultiAlternatives
 from django.conf import settings
-
+import random
+from django.core.cache import cache
 import os
 
 url = os.getenv("FRONT_END_URL_VERIFY")
@@ -194,4 +195,115 @@ HireFlow Team
 
     except Exception as e:
         print(f"Failed to send password reset email to {user.email}: {str(e)}")
+        raise
+
+
+
+
+
+@shared_task
+def send_delete_account_otp(user_id, username, email):
+    """
+    Generates OTP, stores in Redis cache, sends deletion confirmation email.
+    """
+    try:
+        # Generate 6 digit OTP
+        otp = str(random.randint(100000, 999999))
+
+        # Store in Redis with 5 minute expiry
+        cache_key = f"delete_account_otp_{user_id}"
+        cache.set(cache_key, otp, timeout=300)  # 300 seconds = 5 minutes
+
+        subject = "HireFlow Account Deletion OTP"
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 0;">
+                <tr>
+                    <td align="center">
+                        <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:10px;padding:40px;">
+
+                            <tr>
+                                <td align="center">
+                                    <h2 style="color:#dc2626;margin-bottom:10px;">Account Deletion Request ⚠️</h2>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <p style="font-size:16px;color:#374151;">
+                                        Hi <strong>{username}</strong>,
+                                    </p>
+
+                                    <p style="font-size:15px;color:#374151;line-height:1.6;">
+                                        We received a request to <strong>permanently delete</strong> your HireFlow account.
+                                        Use the OTP below to confirm. This code expires in <strong>5 minutes</strong>.
+                                    </p>
+
+                                    <p style="text-align:center;margin:30px 0;">
+                                        <span style="background-color:#fef2f2;
+                                                     color:#dc2626;
+                                                     padding:16px 40px;
+                                                     border-radius:8px;
+                                                     font-size:32px;
+                                                     font-weight:bold;
+                                                     letter-spacing:8px;
+                                                     display:inline-block;
+                                                     border:2px dashed #dc2626;">
+                                            {otp}
+                                        </span>
+                                    </p>
+
+                                    <p style="font-size:14px;color:#6b7280;text-align:center;">
+                                        This OTP is valid for <strong>5 minutes</strong> only.
+                                    </p>
+
+                                    <hr style="margin:30px 0;border:none;border-top:1px solid #e5e7eb;">
+
+                                    <p style="font-size:13px;color:#9ca3af;">
+                                        If you did not request account deletion, please ignore this email.
+                                        Your account will remain safe.
+                                    </p>
+
+                                    <p style="font-size:13px;color:#9ca3af;margin-top:20px;">
+                                        © HireFlow
+                                    </p>
+                                </td>
+                            </tr>
+
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+
+        text_content = f"""
+Hi {username},
+
+Your HireFlow account deletion OTP is: {otp}
+
+This code expires in 5 minutes.
+
+If you did not request this, ignore this email.
+
+© HireFlow
+"""
+
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[email],
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send()
+
+        print(f"Delete account OTP sent to {email}")
+
+    except Exception as e:
+        print(f"Failed to send delete OTP to {email}: {str(e)}")
         raise

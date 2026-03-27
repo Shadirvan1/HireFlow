@@ -39,7 +39,7 @@ export default function Login() {
   // -------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (loading) return; // prevent double submit
+    if (loading) return;
 
     setLoading(true);
     setFieldErrors({});
@@ -68,7 +68,6 @@ export default function Login() {
         })
       );
 
-      redirectUser(user.role);
 
     } catch (error) {
       const data = error.response?.data;
@@ -130,15 +129,16 @@ export default function Login() {
   // -------------------------
   // Redirect Based On Role
   // -------------------------
-  const redirectUser = (role) => {
-    if (role === "HR") {
-      navigate("/hr/dashboard");
-    } else if (role === "ADMIN") {
-      navigate("/admin/dashboard");
-    } else {
-      navigate("/candidate/dashboard");
-    }
-  };
+//   const redirectUser = (role) => {
+
+// setTimeout(() => {
+//     if (role === "HR") navigate("/hr/dashboard");
+//     else if (role === "ADMIN") navigate("/admin/dashboard");
+//     else navigate("/candidate/dashboard");
+//   }, 1000);
+// };
+
+
 
   // -------------------------
   // UI

@@ -4,11 +4,13 @@ from routes.jd_router import router as job_api_router
 from routes.rank_router import router as rank_api_router
 from routes.agent_router import router as agent_api_router
 
+from fastapi.security.api_key import APIKeyHeader
+
 import os
 
 app = FastAPI()
 
-from fastapi.security.api_key import APIKeyHeader
+
 
 
 API_KEY = os.getenv("SECRET_KEY")

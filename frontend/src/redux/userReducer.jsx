@@ -17,6 +17,7 @@ const userSlice = createSlice({
       state.user_id = user_id;
       state.role = role;
       state.isAuthenticated = true;
+      state.authChecked = true;
     },
 
     logout: (state) => {

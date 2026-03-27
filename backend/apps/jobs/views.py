@@ -17,7 +17,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from apps.accounts.models import HRProfile, CandidateProfile, Company
-
+from .tasks import send_rejection_email,send_hiring_email
 from .models import Job, JobApplication, SavedJob
 from .serializers import (
     JobSerializer,
@@ -28,7 +28,8 @@ from .serializers import (
     JobApplicationReadSerializer,
     ScheduledInterviewSerializer,
     FullCandidateDetailSerializer,
-    ApplicationStatusUpdateSerializer
+    ApplicationStatusUpdateSerializer,
+    HRApprovalSerializer
 )
 
 User = get_user_model()
@@ -375,9 +376,15 @@ class ScheduledInterviewsAPIView(APIView):
 
     def get(self, request, *args, **kwargs):
         user = request.user
+        try:
+            hr_profile = HRProfile.objects.get(user=user)
+            user_company = hr_profile.company
+        except HRProfile.DoesNotExist:
+            return Response({"error": "User does not have an HR profile/company associated."}, status=404)
+
         user_role = getattr(user, 'role', None)
 
-        queryset = JobApplication.objects.filter(status="SCHEDULED")
+        queryset = JobApplication.objects.filter(status="SCHEDULED",job__company=user_company)
 
         if user_role == "HR":
             pass
@@ -399,6 +406,35 @@ class ScheduledInterviewsAPIView(APIView):
         queryset = queryset.order_by("scheduled_at")
 
         serializer = ScheduledInterviewSerializer(queryset, many=True)
+
+        return Response({
+            "count": queryset.count(),
+            "results": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+class HiredCandidatesAPIView(APIView):
+    """
+    Returns a list of scheduled interviews.
+    
+    - HR: sees all scheduled interviews
+    - Interviewer: sees only interviews assigned to them
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        try:
+            hr_profile = HRProfile.objects.get(user=user)
+            user_company = hr_profile.company
+        except HRProfile.DoesNotExist:
+            return Response({"error": "User does not have an HR profile/company associated."}, status=404)
+
+
+        queryset = JobApplication.objects.filter(status__in=["HIRED"],job__company=user_company)
+
+
+        serializer = FullCandidateDetailSerializer(queryset, many=True)
 
         return Response({
             "count": queryset.count(),
@@ -469,10 +505,10 @@ class AssignInterviewerView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-           
-            if getattr(user, "role", None) != "INTERVIEWER":
+            user_role = getattr(user, "role", None)
+            if user_role not in ["INTERVIEWER", "HR"]:
                 return Response(
-                    {"error": "User is not an interviewer"},
+                    {"error": "User is not an interviewer or an HR"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
@@ -498,9 +534,10 @@ class CandidateApplicationDetailView(APIView):
 
     def get_object(self, request, pk):
         user = request.user
+        
         role = getattr(user, "role", None)
 
-       
+        
         if role == "CANDIDATE":
             try:
                 candidate_profile = user.candidate_profile
@@ -517,7 +554,7 @@ class CandidateApplicationDetailView(APIView):
             return get_object_or_404(
                 JobApplication.objects.select_related("job", "job__company"),
                 id=pk,
-                job__company__hr_members__user=user   
+                job__user=user  
             )
 
         return None
@@ -571,19 +608,22 @@ class CandidateApplicationDetailView(APIView):
 
 
 
-from .models import Application, InterviewScore
+from .models import JobApplication, InterviewScore
 from .serializers import InterviewScoreSerializer
 
 
 class SubmitInterviewScoreView(APIView):
     permission_classes = []
 
-    def post(self, request, application_id):
+    def post(self, request, version, application_id):
         data = request.data.copy()
-        data["application_id"] = application_id
+        data["scores"]["application_id"] = application_id
+        print(data)
+        
 
-        serializer = InterviewScoreSerializer(data=data)
+        serializer = InterviewScoreSerializer(data=data['scores'])
         if not serializer.is_valid():
+            print(serializer.errors)
             return Response(serializer.errors, status=400)
 
         validated = serializer.validated_data
@@ -602,6 +642,10 @@ class SubmitInterviewScoreView(APIView):
             return Response({"error": "Application not found"}, status=404)
        
         try:
+            auth_headers = {
+                "X-API-KEY": settings.SECRET_KEY,
+                "Content-Type": "application/json"
+            }
 
             ai_response = requests.post(
                 f"{FASTAPI_URL}/evaluate",
@@ -615,11 +659,27 @@ class SubmitInterviewScoreView(APIView):
                         "attitude": validated["attitude"],
                     }
                 },
+                headers=auth_headers,
                 timeout=5
             )
 
             ai_data = ai_response.json()
-            print(ai_data)
+            JobApplication.objects.filter(id=application_id).update(
+            
+            status=ai_data.get("decision", "REJECTED"), 
+            
+            score=ai_data.get("normalized_score", 0),
+            
+            ai_reasoning=ai_data.get("reason", ""),
+            score_analysis=ai_data.get("score_reasoning", "")
+                )
+
+            return Response({
+                "message": "AI Evaluation Complete",
+                "decision": ai_data.get("decision"),
+                "score": ai_data.get("normalized_score"),
+                "reason": ai_data.get("reason")
+            }, status=200)
 
         except Exception as e:
             return Response({
@@ -628,12 +688,65 @@ class SubmitInterviewScoreView(APIView):
             }, status=500)
 
         
-        Application.objects.filter(id=application_id).update(
-            status=ai_data.get("status", "HOLD"),
-            score=ai_data.get("final_score", 0)
-        )
+       
+class GetALLNonApproveApplicationView(APIView):
+    def get(self, request, version):
+        user = request.user
+        try:
+            hr_profile = HRProfile.objects.get(user=user)
+            user_company = hr_profile.company
+            
+            applications = JobApplication.objects.filter(
+                job__company=user_company, 
+                status__in=["HIRED", "REJECTED"], 
+                hr_approve=False
+            )
 
-        return Response({
-            "message": "Score submitted successfully",
-            "ai_result": ai_data
-        }, status=200)
+            
+            serializer = HRApprovalSerializer(applications, many=True)
+            
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except HRProfile.DoesNotExist:
+            return Response({"error": "HR Profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ChangeApprovalView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, version, id):
+        try:
+            
+            hr_profile = HRProfile.objects.get(user=request.user)
+            user_company = hr_profile.company
+
+            application = JobApplication.objects.get(
+                id=id, 
+                job__company=user_company
+            )
+            
+        except HRProfile.DoesNotExist:
+            return Response({"error": "HR Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        except JobApplication.DoesNotExist:
+            return Response({"error": "Application not found or unauthorized."}, status=status.HTTP_404_NOT_FOUND)
+
+       
+        serializer = HRApprovalSerializer(application, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            
+            application = serializer.save(hr_approve=True)
+            if application.status == "HIRED":
+                send_hiring_email.delay(application.id)
+            elif application.status == "REJECTED":
+                send_rejection_email.delay(application.id)
+            
+            return Response({
+                "message": f"Application {id} updated successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

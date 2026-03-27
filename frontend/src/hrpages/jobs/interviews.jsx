@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "../../api/api";
 import {
-  Video, FileText, Calendar, User, Copy, Check,
-  ExternalLink, UserPlus, Loader2, Search, Filter
+  Video, FileText, User, Copy, Check,
+  Loader2
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import { toast, Toaster } from "react-hot-toast";
@@ -60,12 +60,28 @@ export default function ScheduledInterviews() {
     }
   };
 
+  
   const handleScoreChange = (id, field, value) => {
+    if (value === "") {
+      setScores(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [field]: ""
+        }
+      }));
+      return;
+    }
+
+    const num = Number(value);
+
+    if (num < 0 || num > 10) return;
+
     setScores(prev => ({
       ...prev,
       [id]: {
         ...prev[id],
-        [field]: Number(value)
+        [field]: num
       }
     }));
   };
@@ -184,26 +200,32 @@ export default function ScheduledInterviews() {
                   <option value="">Assign Interviewer</option>
                   {interviewers.map(u => (
                     <option key={u.id} value={u.id}>
-                      {u.first_name} {u.last_name}
+                      {u.email}
                     </option>
                   ))}
                 </select>
               )}
 
-              {/* Score Section */}
-              {userRole !== "HR" && (
+              {/* Score Inputs */}
+              {userRole !== "" && (
                 <div className="grid grid-cols-2 gap-2">
-                  {["communication ( 0 - 10 )", "technical ( 0 - 10 )", "practical ( 0 - 10 )", "attitude ( 0 - 10 )"].map(field => (
+                  {["communication", "technical", "practical", "attitude"].map(field => (
                     <input
                       key={field}
                       type="number"
                       min="0"
                       max="10"
+                      step="1"
                       placeholder={field}
                       value={scores[interview.id]?.[field] || ""}
                       onChange={(e) =>
                         handleScoreChange(interview.id, field, e.target.value)
                       }
+                      onKeyDown={(e) => {
+                        if (e.key === "-" || e.key === "e") {
+                          e.preventDefault();
+                        }
+                      }}
                       className="bg-slate-800 p-2 rounded text-sm"
                     />
                   ))}
@@ -212,7 +234,7 @@ export default function ScheduledInterviews() {
                     onClick={() => handleSubmitScores(interview)}
                     className="col-span-2 bg-green-600 py-2 rounded text-white"
                   >
-                    Submit Score
+                    Submit Score (0 - 10)
                   </button>
                 </div>
               )}

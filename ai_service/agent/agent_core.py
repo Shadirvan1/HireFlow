@@ -4,7 +4,7 @@ import asyncio
 from typing import Optional, Dict, List
 from langgraph.prebuilt import create_react_agent
 from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 from .tools import search_jobs, search_candidates, general_support
 
 

@@ -18,8 +18,12 @@ from django.contrib.auth import get_user_model
 from .utilities import send_password_reset_email
 from firebase_admin import auth as firebase_auth
 import os
+from django.contrib.auth.password_validation import validate_password
 from datetime import date
 import pyotp
+from django.core.cache import cache
+from django.contrib.auth import authenticate
+
     
 from django.contrib.auth.hashers import check_password
 from rest_framework import serializers
@@ -805,3 +809,57 @@ class ForgotPasswordSerializer(serializers.Serializer):
             send_password_reset_email.delay(user)
 
         return True
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True, validators=[validate_password])
+    confirm_password = serializers.CharField(required=True)
+
+    def validate_old_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError("Old password is not correct.")
+        return value
+
+    def validate(self, data):
+        if data['new_password'] != data['confirm_password']:
+            raise serializers.ValidationError({"confirm_password": "New passwords do not match."})
+        
+        if data['old_password'] == data['new_password']:
+            raise serializers.ValidationError({"new_password": "New password cannot be the same as the old password."})
+            
+        return data
+
+
+
+class DeleteAccountRequestSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True)
+
+    def validate_password(self, value):
+        user = self.context["request"].user
+
+        # Verify password is correct
+        if not user.check_password(value):
+            raise serializers.ValidationError("Incorrect password.")
+        
+        return value
+
+
+class DeleteAccountConfirmSerializer(serializers.Serializer):
+    otp = serializers.CharField(max_length=6, min_length=6, write_only=True)
+
+    def validate_otp(self, value):
+        user = self.context["request"].user
+        cache_key = f"delete_account_otp_{user.id}"
+
+        stored_otp = cache.get(cache_key)
+
+        if not stored_otp:
+            raise serializers.ValidationError("OTP has expired. Please request a new one.")
+
+        if stored_otp != value:
+            raise serializers.ValidationError("Invalid OTP.")
+
+        return value
+    

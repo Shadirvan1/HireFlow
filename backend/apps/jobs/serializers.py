@@ -222,7 +222,7 @@ class InterviewScoreSerializer(serializers.Serializer):
     attitude = serializers.IntegerField(min_value=0, max_value=10)
 
     def validate(self, data):
-        # Optional: extra validation
+       
         if sum([
             data["communication"],
             data["technical"],
@@ -232,3 +232,34 @@ class InterviewScoreSerializer(serializers.Serializer):
             raise serializers.ValidationError("All scores cannot be zero")
 
         return data
+
+
+from rest_framework import serializers
+from .models import JobApplication
+
+
+
+class HRApprovalSerializer(serializers.ModelSerializer):
+   
+    applicant_name = serializers.CharField(source="applicant.first_name", read_only=True)
+    applicant_last_name = serializers.CharField(source="applicant.last_name", read_only=True)
+    applicant_email = serializers.EmailField(source="applicant.user.email", read_only=True)
+
+    ai_reasoning = serializers.CharField(read_only=True)
+    score_analysis = serializers.CharField(read_only=True)
+    score = serializers.FloatField(read_only=True)
+    
+    class Meta:
+        model = JobApplication
+        fields = [
+            'id', 
+            'applicant_name', 
+            'applicant_last_name',
+            'applicant_email',
+            'status', 
+            'hr_approve', 
+            'reason', 
+            'ai_reasoning', 
+            'score_analysis', 
+            'score'
+        ]

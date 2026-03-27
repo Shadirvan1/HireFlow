@@ -15,8 +15,10 @@ import {
   Menu,
   ChevronLeft,
   Lock,
-  MessageSquare, // Swapped Settings for Chat
-  UserCircle
+  MessageSquare,
+  BookCheck,
+  UserCircle,
+  ClipboardClock
 } from "lucide-react";
 
 export default function HRSidebar() {
@@ -33,6 +35,8 @@ export default function HRSidebar() {
     { name: "Management", icon: Users, path: "/hr/all-users", roles: ["HR",] },
     { name: "Applications", icon: FileText, path: "/hr/applications", roles: ["HR"] },
     { name: "Interviews", icon: Shield, path: "/hr/interviews", roles: ["HR", "INTERVIEWER"] },
+    { name: "Approval", icon: ClipboardClock, path: "/hr/approvals", roles: ["HR"] },
+    { name: "Hired", icon: BookCheck, path: "/hr/hired", roles: ["HR"] },
     { name: "Chat", icon: MessageSquare, path: "/hr/chat", roles: ["HR", "INTERVIEWER"] },
     { name: "Profile", icon: UserCircle, path: "/hr/profile", roles: ["HR", "INTERVIEWER"] },
     { name: "Security", icon: Shield, path: "/hr/security", roles: ["HR", "INTERVIEWER"] },

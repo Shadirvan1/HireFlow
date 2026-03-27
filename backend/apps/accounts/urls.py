@@ -21,6 +21,8 @@ urlpatterns = [
     path("hr/register/<token>/", views.RegisterViaInviteView.as_view()),
     path("phone/verify-otp/", views.FirebaseVerifyView.as_view()),
     path("hr/profile/", views.HRProfileDetailView.as_view()),
-    
+    path('user/change-password/', views.ChangePasswordView.as_view(), name='change-password'),
+    path("delete-account/request/", views.DeleteAccountRequestView.as_view(), name="delete-account-request"),
+    path("delete-account/confirm/", views.DeleteAccountConfirmView.as_view(), name="delete-account-confirm"),
     
 ]

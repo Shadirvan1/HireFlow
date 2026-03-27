@@ -115,8 +115,12 @@ class JobApplication(models.Model):
     scheduled_at = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(null=True, blank=True)
     interviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-
+    reason = models.TextField(blank=True, null=True)
     applied_at = models.DateTimeField(auto_now_add=True)
+    ai_reasoning = models.TextField(blank=True, null=True)
+    score_analysis = models.TextField(blank=True, null=True)
+    hr_approve = models.BooleanField(default=False)
+    
 
     class Meta:
         unique_together = ('job', 'applicant')

@@ -53,15 +53,11 @@ export default function SecuritySettings() {
             Account Security
           </h2>
           <div className="space-y-3">
-            <button className="w-full text-left p-4 border rounded-xl hover:bg-gray-50">
+            <button onClick={()=>navigate("/change/password")} className="w-full text-left p-4 border rounded-xl hover:bg-gray-50">
               Change Password
             </button>
-            <button className="w-full text-left p-4 border rounded-xl hover:bg-gray-50">
-              View Login Activity
-            </button>
-            <button className="w-full text-left p-4 border rounded-xl hover:bg-red-50 text-red-600">
-              Logout All Devices
-            </button>
+
+
           </div>
         </div>
 
@@ -95,47 +91,23 @@ export default function SecuritySettings() {
             )}
           </div>
 
-          <div className="space-y-2">
-            <button className="w-full text-left p-4 border rounded-xl hover:bg-gray-50">
-              Setup Backup Codes
-            </button>
-          </div>
+          
         </div>
 
-        {/* Privacy Settings */}
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">
-            Privacy Settings
-          </h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center border p-4 rounded-xl">
-              <div>
-                <p className="font-medium">Show Online Status</p>
-                <p className="text-sm text-gray-500">Let others see when you are online.</p>
-              </div>
-              <input
-                type="checkbox"
-                checked={onlineStatus}
-                onChange={() => setOnlineStatus(!onlineStatus)}
-                className="w-5 h-5"
-              />
-            </div>
-            {/* ... other checkboxes remain same ... */}
-          </div>
-        </div>
-
-        {/* Data & Privacy */}
+       
         <div className="bg-white rounded-2xl shadow p-6">
           <h2 className="text-xl font-semibold mb-4 text-gray-700">
             Data & Privacy
           </h2>
           <div className="space-y-3">
-            <button className="w-full text-left p-4 border rounded-xl hover:bg-gray-50">
-              Download My Data
-            </button>
-            <button className="w-full text-left p-4 border rounded-xl hover:bg-red-50 text-red-600">
-              Delete Account
-            </button>
+            
+           
+<button
+  onClick={() => navigate("/hr/delete-account")}
+  className="w-full text-left p-4 border rounded-xl hover:bg-red-50 text-red-600"
+>
+  Delete Account
+</button>
           </div>
         </div>
       </div>

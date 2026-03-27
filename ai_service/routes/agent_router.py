@@ -1,5 +1,6 @@
+from graph_agent.agent_core import run_graph_agent
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter,HTTPException
 from pydantic import BaseModel
 from agent.agent_core import run_agent
 
@@ -33,3 +34,18 @@ class ScoreInput(BaseModel):
     job_embedd_id: int
     scores: dict
 
+
+@router.post("/evaluate")
+async def evaluate(request: ScoreInput):
+    try:
+       
+        result = run_graph_agent(
+            application_id=request.application_id,
+            job_embedd_id=request.job_embedd_id,
+            scores=request.scores
+        )
+        print(f"AI Result: {result}")
+        return result
+    except Exception as e:
+        print(f"Graph Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

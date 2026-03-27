@@ -8,7 +8,7 @@ export default function AuthProvider({ children }) {
   const hasRun = useRef(false);
 
   useEffect(() => {
-    if (hasRun.current) return;   // prevent double run
+    if (hasRun.current) return;  
     hasRun.current = true;
 
     const checkAuth = async () => {

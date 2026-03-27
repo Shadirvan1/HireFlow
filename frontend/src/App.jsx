@@ -39,7 +39,10 @@ import MyApplications from "./candidatepages/jobs/my_jobs";
 import ScheduledInterviews from "./hrpages/jobs/interviews";
 import HRProfilePage from "./hrpages/profile/hrprofile";
 import SingleApplication from "./hrpages/jobs/singleapplication";
-
+import HRApprovalDashboard from "./hrpages/jobs/pendingApplications";
+import HiredCandidatesRoster from "./hrpages/jobs/hiredcandidates";
+import ChangePasswordPage from "./authentication/change-password";
+import DeleteAccount from "./hrpages/security/delete-account";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -58,9 +61,8 @@ function App() {
           <Route path="/reset-password/:uid/:token" element={<Login_protector><ResetPassword /></Login_protector>} />
           <Route path="/register/:token" element={<Login_protector><InvitationRegister /></Login_protector>} />
           
+          <Route path="/change/password" element={<ChangePasswordPage />} />
 
-          <Route path="/hr/setup-mfa" element={<SetupMFA />} />
-          <Route path="/hr/disable-mfa" element={<DisableMFA />} />
 
           {/* ---- candidate pages ---- */}
           <Route path="/candidate" element={<ProtectedRoute allowedRoles={['CANDIDATE']}>< CandidateOutlet /></ProtectedRoute>}>
@@ -78,6 +80,8 @@ function App() {
           {/* ---- hr pages ---- */}
           
           <Route path="/hr" element={<ProtectedRoute allowedRoles={['HR',"INTERVIEWER"]}><HROutlet /></ProtectedRoute>} >
+          <Route path="/hr/setup-mfa" element={<SetupMFA />} />
+          <Route path="/hr/disable-mfa" element={<DisableMFA />} />
           <Route path="dashboard" element={<HrDashboard />} />
           <Route path="profile" element={<HRProfilePage />} />
           <Route path="jobs" element={<HRJobs />} />
@@ -86,7 +90,10 @@ function App() {
           <Route path="security" element={<SecuritySettings />} />
           <Route path="applications" element={<HRApplications />} />
           <Route path="interviews" element={<ScheduledInterviews />} />
+          <Route path="approvals" element={<HRApprovalDashboard />} />
+          <Route path="hired" element={<HiredCandidatesRoster />} />
           <Route path="chat" element={<ChatPage />} />
+          <Route path="delete-account" element={<DeleteAccount />} />
           <Route path="notifications" element={<HRNotification />} />
           <Route path="application/:appId" element={<SingleApplication />} />
           </Route>

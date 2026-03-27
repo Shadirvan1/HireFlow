@@ -7,7 +7,7 @@ from django.utils.encoding import force_str
 from django.utils import timezone
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.tokens import default_token_generator, PasswordResetTokenGenerator
-
+from django.contrib.auth import update_session_auth_hash
 from rest_framework import views, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -36,12 +36,15 @@ from .serializers import (
     FirebaseVerifySerializer,
     RegisterViaInviteSerializer,
     ForgotPasswordSerializer,
-    ResetPasswordSerializer
+    ResetPasswordSerializer,
+    ChangePasswordSerializer,
+    DeleteAccountConfirmSerializer,
+    DeleteAccountRequestSerializer
 
 
 )
 
-from .utilities import send_verification_email
+from .utilities import send_verification_email,send_delete_account_otp
 from .services.jwt_service import create_tokens_for_user, set_tokens_in_response, refresh_tokens
 from .services.mfa_service import (
     generate_mfa_secret,
@@ -447,3 +450,90 @@ class HRProfileDetailView(views.APIView):
         
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangePasswordView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        
+        if serializer.is_valid():
+            user = request.user
+            user.set_password(serializer.validated_data['new_password'])
+            user.save()
+            
+            update_session_auth_hash(request, user)
+            
+            return Response(
+                {"message": "Password updated successfully."}, 
+                status=status.HTTP_200_OK
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DeleteAccountRequestView(views.APIView):
+    """
+    Step 1 — Verify password and send OTP to email.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, version):
+        serializer = DeleteAccountRequestSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Password is correct — send OTP via Celery
+        send_delete_account_otp.delay(
+            user_id=request.user.id,
+            username=request.user.username,
+            email=request.user.email
+        )
+
+        return Response(
+            {"message": "OTP sent to your email. Valid for 5 minutes."},
+            status=status.HTTP_200_OK
+        )
+
+
+class DeleteAccountConfirmView(views.APIView):
+    """
+    Step 2 — Verify OTP and permanently delete account.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, version):
+        serializer = DeleteAccountConfirmSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+
+        
+        cache_key = f"delete_account_otp_{user.id}"
+        cache.delete(cache_key)
+
+        
+        user.delete()
+
+        response = Response(
+            {"message": "Account permanently deleted."},
+            status=status.HTTP_200_OK
+        )
+        response.delete_cookie("access_token")  
+        return response
