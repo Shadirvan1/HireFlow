@@ -43,6 +43,7 @@ import HRApprovalDashboard from "./hrpages/jobs/pendingApplications";
 import HiredCandidatesRoster from "./hrpages/jobs/hiredcandidates";
 import ChangePasswordPage from "./authentication/change-password";
 import DeleteAccount from "./hrpages/security/delete-account";
+import MfaLogin from "./authentication/login-mfa";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -53,6 +54,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Login_protector><Intro /></Login_protector>} />
           <Route path="/login" element={<Login_protector><Login /></Login_protector>} />
+          <Route path="/login/mfa" element={<Login_protector><MfaLogin /></Login_protector>} />
           <Route path="/register" element={<Login_protector><Seeker_register /></Login_protector>} />
           <Route path="/hr/register" element={<Login_protector><HRRegister /></Login_protector>} />
           <Route path="/resend/link" element={ <Login_protector><EmailResend /></Login_protector>} />

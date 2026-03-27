@@ -195,18 +195,19 @@ class SeekerLoginSerializer(serializers.Serializer):
                     "email": "Please contact admin"
                 })
 
+       
         if user.mfa_enabled:
             if not otp:
-                raise serializers.ValidationError({
-                    "mfa_required": True,
-                    "email": user.email
-                })
+                attrs["mfa_required"] = True  
+                attrs["user"] = user
+                return attrs  
 
             if not verify_otp(user, otp):
                 raise serializers.ValidationError({
-                    "otp": "Invalid OTP"
+                    "otp": "Invalid OTP. Please try again."
                 })
 
+        attrs["mfa_required"] = False
         attrs["user"] = user
         return attrs
 
@@ -765,6 +766,7 @@ class ResetPasswordSerializer(serializers.Serializer):
             user_id = force_str(urlsafe_base64_decode(uid))
             user = User.objects.get(pk=user_id)
         except Exception:
+
             raise serializers.ValidationError({"error": "Invalid link"})
 
         if not PasswordResetTokenGenerator().check_token(user, token):
@@ -806,7 +808,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
         user = self.context.get("user")
 
         if user:
-            send_password_reset_email.delay(user)
+            print("worked")
+            send_password_reset_email.delay(user.id)
 
         return True
 

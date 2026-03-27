@@ -164,7 +164,7 @@ function HrView({ data, navigate }) {
             <Shield className="mb-6 opacity-80" size={32} />
             <h3 className="text-xl font-bold mb-3">Recruiter Shield</h3>
             <p className="text-indigo-100 text-sm leading-relaxed mb-6 opacity-90">All candidate data is encrypted. Review your workspace access permissions regularily.</p>
-            <button className="w-full py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-black uppercase tracking-widest backdrop-blur-md transition-colors">
+            <button  onClick={()=>navigate("/hr/security")} className="w-full py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-xs font-black uppercase tracking-widest backdrop-blur-md transition-colors">
               Security Logs
             </button>
           </div>

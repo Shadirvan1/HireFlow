@@ -7,6 +7,9 @@ from django.conf import settings
 import random
 from django.core.cache import cache
 import os
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 url = os.getenv("FRONT_END_URL_VERIFY")
 FRONTEND_URL = os.getenv("FRONT_END_URL")
@@ -83,13 +86,20 @@ def send_verification_email(user):
 
 
 @shared_task
-def send_password_reset_email(user):
+def send_password_reset_email(user_id):
     """
     Sends a professional password reset email.
     """
 
     try:
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        print("Started")
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        print("This user is not in database")
+
+    try:
+        print("strtttt")
+        uid = urlsafe_base64_encode(force_bytes(user.id))
         token = default_token_generator.make_token(user)
 
         reset_link = f"{FRONTEND_URL}/reset-password/{uid}/{token}/"
@@ -212,7 +222,7 @@ def send_delete_account_otp(user_id, username, email):
 
         # Store in Redis with 5 minute expiry
         cache_key = f"delete_account_otp_{user_id}"
-        cache.set(cache_key, otp, timeout=300)  # 300 seconds = 5 minutes
+        cache.set(cache_key, otp, timeout=300)  
 
         subject = "HireFlow Account Deletion OTP"
 

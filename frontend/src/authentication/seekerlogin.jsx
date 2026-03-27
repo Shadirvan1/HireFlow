@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import api from "../api/api";
 import { loginSuccess } from "../redux/userReducer";
-import { generateFCMToken } from "../firebase"
+import { generateFCMToken } from "../firebase";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,30 +13,20 @@ export default function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    otp: "",
   });
 
-  const [mfaRequired, setMfaRequired] = useState(false);
   const [fieldErrors, setFieldErrors] = useState({});
   const [nonFieldErrors, setNonFieldErrors] = useState([]);
   const [generalError, setGeneralError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // -------------------------
-  // Handle Input Change
-  // -------------------------
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    // Clear errors on change
     setFieldErrors({ ...fieldErrors, [e.target.name]: "" });
     setNonFieldErrors([]);
     setGeneralError("");
   };
 
-  // -------------------------
-  // Handle Normal Login
-  // -------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -47,41 +37,41 @@ export default function Login() {
     setGeneralError("");
 
     try {
-
       const fcmToken = await generateFCMToken();
+      const { data } = await api.post("accounts/login/", {
+        ...formData,
+        fcm_token: fcmToken,
+      });
 
-      const { data } = await api.post("accounts/login/", {...formData,"fcm_token":fcmToken});
-
-
-      if (data.mfa_required && !formData.otp) {
-        setMfaRequired(true);
-        setLoading(false);
+      // ✅ MFA required → go to MFA page, pass credentials via state
+      if (data.mfa_required) {
+        navigate("/login/mfa", {
+          state: {
+            email: formData.email,
+            password: formData.password,
+            fcmToken,
+          },
+        });
         return;
       }
 
+      // ✅ No MFA → login complete
       const user = data.user;
-
-      dispatch(
-        loginSuccess({
-          user_id: user.id,
-          role: user.role,
-        })
-      );
-
+      dispatch(loginSuccess({
+        user_id: user.id,
+        role: user.role,
+        email: user.email,
+      }));
 
     } catch (error) {
       const data = error.response?.data;
-      
-
       if (data) {
         const fieldErrorData = {};
-
         Object.keys(data).forEach((key) => {
           if (key !== "non_field_errors" && key !== "error") {
             fieldErrorData[key] = data[key][0];
           }
         });
-
         setFieldErrors(fieldErrorData);
         setNonFieldErrors(data.non_field_errors || []);
         setGeneralError(data.error || "");
@@ -93,31 +83,22 @@ export default function Login() {
     }
   };
 
-  // -------------------------
-  // Handle Google Login
-  // -------------------------
   const handleGoogleSuccess = async (credentialResponse) => {
     if (loading) return;
     setLoading(true);
     setGeneralError("");
 
     try {
-      const token = credentialResponse.credential;
-
       const { data } = await api.post("accounts/auth/google/", {
-        token,
+        token: credentialResponse.credential,
       });
 
       const user = data.user;
-
-      dispatch(
-        loginSuccess({
-          user_id: user.id,
-          role: user.role,
-        })
-      );
-
-      redirectUser(user.role);
+      dispatch(loginSuccess({
+        user_id: user.id,
+        role: user.role,
+        email: user.email,
+      }));
 
     } catch {
       setGeneralError("Google login failed.");
@@ -126,38 +107,19 @@ export default function Login() {
     }
   };
 
-  // -------------------------
-  // Redirect Based On Role
-  // -------------------------
-//   const redirectUser = (role) => {
-
-// setTimeout(() => {
-//     if (role === "HR") navigate("/hr/dashboard");
-//     else if (role === "ADMIN") navigate("/admin/dashboard");
-//     else navigate("/candidate/dashboard");
-//   }, 1000);
-// };
-
-
-
-  // -------------------------
-  // UI
-  // -------------------------
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 px-4">
       <div className="bg-white/95 backdrop-blur-lg shadow-2xl rounded-3xl p-10 w-full max-w-md border border-white/30">
-        
+
         <h2 className="text-3xl font-bold text-indigo-700 text-center mb-2">
           Welcome Back
         </h2>
-
         <p className="text-center text-gray-500 mb-8 text-sm">
           Login to continue your journey
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* Email */}
           <div>
             <input
               type="email"
@@ -169,13 +131,10 @@ export default function Login() {
               className="w-full px-4 py-3 border rounded-xl border-gray-300"
             />
             {fieldErrors.email && (
-              <p className="text-red-600 text-sm mt-1">
-                {fieldErrors.email}
-              </p>
+              <p className="text-red-600 text-sm mt-1">{fieldErrors.email}</p>
             )}
           </div>
 
-          {/* Password */}
           <div>
             <input
               type="password"
@@ -187,34 +146,10 @@ export default function Login() {
               className="w-full px-4 py-3 border rounded-xl border-gray-300"
             />
             {fieldErrors.password && (
-              <p className="text-red-600 text-sm mt-1">
-                {fieldErrors.password}
-              </p>
+              <p className="text-red-600 text-sm mt-1">{fieldErrors.password}</p>
             )}
           </div>
 
-          {/* OTP */}
-          {mfaRequired && (
-            <div>
-              <input
-                type="text"
-                name="otp"
-                placeholder="Enter 6-digit OTP"
-                value={formData.otp}
-                onChange={handleChange}
-                required
-                maxLength={6}
-                className="w-full px-4 py-3 border rounded-xl border-gray-300 text-center text-lg tracking-widest"
-              />
-              {fieldErrors.otp && (
-                <p className="text-red-600 text-sm mt-1">
-                  {fieldErrors.otp}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Non Field Errors */}
           {nonFieldErrors.length > 0 && (
             <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg">
               {nonFieldErrors.map((err, index) => (
@@ -223,48 +158,47 @@ export default function Login() {
             </div>
           )}
 
-          {/* General Error */}
           {generalError && (
             <div className="bg-red-100 text-red-700 text-sm p-3 rounded-lg">
               {generalError}
             </div>
           )}
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
             className={`w-full py-3 rounded-xl font-semibold text-white ${
-              loading
-                ? "bg-indigo-400 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700"
+              loading ? "bg-indigo-400 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
             {loading ? "Please wait..." : "Login"}
           </button>
         </form>
 
-        {/* Google Login */}
-        {!mfaRequired && (
-          <>
-            <div className="flex items-center my-6">
-              <div className="flex-grow h-px bg-gray-300"></div>
-              <span className="px-3 text-gray-500 text-sm">OR</span>
-              <div className="flex-grow h-px bg-gray-300"></div>
-            </div>
+        <div className="flex items-center my-6">
+          <div className="flex-grow h-px bg-gray-300"></div>
+          <span className="px-3 text-gray-500 text-sm">OR</span>
+          <div className="flex-grow h-px bg-gray-300"></div>
+        </div>
 
-            <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setGeneralError("Google login failed")}
-              />
-            </div>
-          </>
-        )}
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setGeneralError("Google login failed")}
+          />
+        </div>
 
-        {/* Links */}
         <p className="text-center text-sm text-gray-600 mt-6">
-          Don’t have an account?{" "}
+          <span
+            onClick={() => navigate("/forgot/password")}
+            className="text-indigo-600 font-medium cursor-pointer hover:underline"
+          >
+            Forgot Password ?
+          </span>
+        </p>
+        
+        <p className="text-center text-sm text-gray-600 mt-6">
+          Don't have an account?{" "}
           <span
             onClick={() => navigate("/register")}
             className="text-indigo-600 font-medium cursor-pointer hover:underline"

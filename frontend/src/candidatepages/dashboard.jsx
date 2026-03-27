@@ -39,7 +39,7 @@ export default function CandidateDashboard() {
       }
     };
     fetchDashboardData();
-  }, [authChecked, isAuthenticated]);
+  }, []);
 
   if (loading) {
     return (

@@ -194,6 +194,14 @@ class LoginView(views.APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
+        mfa_required = serializer.validated_data.get("mfa_required", False)
+
+
+        if mfa_required:
+            return Response(
+                {"mfa_required": True},
+                status=status.HTTP_200_OK 
+            )
 
         if user.role == "HR" and not user.is_hr:
             return Response(
