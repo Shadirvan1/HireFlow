@@ -143,22 +143,6 @@ services:
     networks:
       - internal
 
-  # =============================
-  # 8️⃣ MONGODB (AI logs)
-  # =============================
-  mongodb:
-    image: mongo:7
-    container_name: mongodb_ai_logs
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: mongo_admin
-      MONGO_INITDB_ROOT_PASSWORD: mongo_pass
-    volumes:
-      - mongodb_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - internal
 
   # =============================
   # 9️⃣ NGINX API GATEWAY
@@ -190,7 +174,6 @@ services:
       - ./ai_service:/app
     depends_on:
       - chroma
-      - mongodb
     env_file:
       - ./ai_service/.env
     networks:
@@ -210,6 +193,5 @@ networks:
 volumes:
   postgres_data:
   chroma_data:
-  mongodb_data:
   dynamodb_data:
   n8n_data:

@@ -8,7 +8,7 @@ from .models import Job
 def send_daily_job_notifications():
 
 
-    jobs = Job.objects.filter(is_approve=True).order_by('-id')[:5]
+    jobs = Job.objects.filter(is_approve=True,is_Active=True).order_by('-id')[:5]
     for candidate in CandidateProfile.objects.filter(is_active=True,):
 
         job_rows = ""
@@ -76,7 +76,7 @@ def send_daily_job_notifications():
         """
 
         email = EmailMultiAlternatives(
-            subject="🚀 Daily Job Opportunities for You",
+            subject="HireFlow Jobs",
             body="New jobs are available for you. Please view this email in HTML format.",
             from_email="HireFlow <noreply@hireflow.com>",
             to=[candidate.user.email],

@@ -5,7 +5,6 @@ import os
 import asyncio
 import cloudinary
 import cloudinary.uploader
-from database.mongo_client import logs_collection
 from services.resume_parser import extract_text_from_bytes
 from services.embedding import generate_embedding
 from vector_db.chroma_client import resume_collection

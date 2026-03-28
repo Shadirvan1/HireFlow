@@ -88,7 +88,7 @@ export default function SavedJobs() {
           <Briefcase className="mx-auto text-slate-200 mb-4" size={48} />
           <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No saved jobs yet</p>
           <button 
-            onClick={() => navigate('/candidate/find-jobs')}
+            onClick={() => navigate('/candidate/jobs')}
             className="mt-6 text-blue-600 font-bold hover:underline"
           >
             Browse active roles

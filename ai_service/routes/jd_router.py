@@ -4,7 +4,6 @@ import datetime
 import json
 from services.embedding import generate_embedding
 from vector_db.chroma_client import job_collection
-from database.mongo_client import logs_collection
 from services.llm_trust_check import check_job_trust
 
 router = APIRouter()

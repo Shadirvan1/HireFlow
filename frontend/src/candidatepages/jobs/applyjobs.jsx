@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  Briefcase, MapPin, IndianRupee, ChevronLeft, 
-  Upload, Send, CheckCircle2, Star, Clock 
+  MapPin, IndianRupee, ChevronLeft, 
+  Upload, Send, CheckCircle2, Clock, Briefcase, Mail, User, FileText
 } from 'lucide-react';
 import api from '../../api/api';
 
@@ -10,7 +10,7 @@ export default function ApplyJob() {
   const { jobId } = useParams();
   const navigate = useNavigate();
   
-  const [data, setData] = useState(null); // Holds { job, candidate }
+  const [data, setData] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -18,7 +18,6 @@ export default function ApplyJob() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    phone: '',
     cover_letter: '',
     resume: null
   });
@@ -29,14 +28,12 @@ export default function ApplyJob() {
         const res = await api.get(`jobs/get/job/${jobId}/`);
         setData(res.data);
         
-        // Auto-fill form with candidate data from your API
         if (res.data.candidate) {
           const { first_name, last_name, user } = res.data.candidate;
           setFormData(prev => ({
             ...prev,
             full_name: `${first_name} ${last_name}`.trim(),
-            email: user?.email || '',
-            phone: user?.phone_number || ''
+            email: user?.email || ''
           }));
         }
       } catch (err) {
@@ -62,11 +59,11 @@ export default function ApplyJob() {
     if (!formData.resume) return alert("Please upload your resume");
     
     setSubmitting(true);
+
     const uploadData = new FormData();
     uploadData.append('job', jobId);
     uploadData.append('full_name', formData.full_name);
     uploadData.append('email', formData.email);
-    uploadData.append('phone', formData.phone);
     uploadData.append('cover_letter', formData.cover_letter);
     uploadData.append('resume', formData.resume);
 
@@ -84,24 +81,27 @@ export default function ApplyJob() {
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-      <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p className="text-slate-500 font-medium italic">Preparing your application...</p>
+      <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+      <p className="text-slate-500 font-semibold tracking-wide animate-pulse uppercase text-xs">Preparing your application...</p>
     </div>
   );
 
   const job = data?.job;
 
   if (submitted) return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-6">
-      <div className="max-w-md w-full text-center">
-        <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce">
-          <CheckCircle2 size={48} />
+    <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] p-6">
+      <div className="max-w-md w-full text-center bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/60 border border-slate-100">
+        <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+          <CheckCircle2 size={40} />
         </div>
-        <h2 className="text-3xl font-black text-slate-900 mb-4">You're all set!</h2>
-        <p className="text-slate-500 mb-10 leading-relaxed">
-          Your application for <strong>{job?.title}</strong> has been successfully sent to <strong>{job?.company?.name}</strong>.
+        <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Application Sent!</h2>
+        <p className="text-slate-500 mb-10 leading-relaxed font-medium">
+          Your application for <span className="text-indigo-600 font-bold">{job?.title}</span> has been successfully sent to <span className="text-slate-800 font-bold">{job?.company?.name}</span>.
         </p>
-        <button onClick={() => navigate('/candidate/jobs')} className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+        <button 
+          onClick={() => navigate('/candidate/jobs')} 
+          className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:-translate-y-1 transition-all duration-200"
+        >
           Explore more opportunities
         </button>
       </div>
@@ -109,112 +109,151 @@ export default function ApplyJob() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-200 py-4 px-6 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-600 font-semibold hover:text-indigo-600 transition-colors">
-            <ChevronLeft size={20} /> Back to Job
+    <div className="min-h-screen bg-[#F8FAFC] font-sans pb-20">
+      {/* Navbar */}
+      <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200 py-4 px-8">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="group flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold transition-colors"
+          >
+            <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" /> 
+            Back to Job
           </button>
-          <span className="text-xs font-black uppercase tracking-widest text-slate-400">Application Portal</span>
+          <div className="hidden sm:block text-xs font-black uppercase tracking-widest text-slate-400">Application Portal</div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-6 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-12">
-        
-        {/* LEFT SIDE: Job Insights */}
-        <div className="lg:col-span-5">
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm sticky top-28">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-indigo-100">
-                {job?.company?.name?.charAt(0).toUpperCase()}
+      <div className="max-w-5xl mx-auto p-6 grid lg:grid-cols-2 gap-12 mt-8">
+
+        {/* Job Info Card */}
+        <div className="space-y-6">
+          <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
+            
+            <div className="relative z-10">
+              <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-tighter rounded-lg mb-4">Applying For</span>
+              <h2 className="text-3xl font-black text-slate-900 leading-tight mb-2 uppercase tracking-tight">{job?.title}</h2>
+              <div className="flex items-center gap-2 text-indigo-600 font-bold text-lg mb-6">
+                 <Briefcase size={18} /> {job?.company?.name}
               </div>
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 leading-tight">{job?.title}</h2>
-                <p className="text-indigo-600 font-bold text-sm">{job?.company?.name}</p>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="p-2 bg-white rounded-lg shadow-sm"><MapPin size={18} className="text-indigo-500" /></div>
+                  <span className="font-semibold">{job?.location}</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="p-2 bg-white rounded-lg shadow-sm"><IndianRupee size={18} className="text-indigo-500" /></div>
+                  <span className="font-semibold text-slate-900 italic">₹{job?.salary_min?.toLocaleString()} - ₹{job?.salary_max?.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <div className="p-2 bg-white rounded-lg shadow-sm"><Clock size={18} className="text-indigo-500" /></div>
+                  <span className="font-semibold">{job?.job_type}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+            <p className="text-slate-400 text-sm font-medium italic">Make sure your details match your professional profile.</p>
+          </div>
+        </div>
+
+        {/* Form Section */}
+        <div className="relative">
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-[2.5rem] blur opacity-10"></div>
+          
+          <form onSubmit={handleSubmit} className="relative bg-white p-8 rounded-[2rem] shadow-xl shadow-slate-200 border border-white space-y-6">
+            <h3 className="text-xl font-black text-slate-800 border-b pb-4 mb-2 flex items-center gap-2">
+              <FileText size={20} className="text-indigo-500" /> Candidate Details
+            </h3>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Full Name</label>
+              <div className="relative">
+                <User size={18} className="absolute left-4 top-4 text-slate-400" />
+                <input
+                  required
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  placeholder="e.g. John Doe"
+                  className="w-full p-4 pl-12 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all font-medium"
+                />
               </div>
             </div>
 
-            <div className="space-y-5 mb-10">
-              <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl">
-                <MapPin size={18} className="text-indigo-500" />
-                <span className="text-sm font-semibold">{job?.location}</span>
-              </div>
-              <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl">
-                <IndianRupee size={18} className="text-indigo-500" />
-                <span className="text-sm font-semibold">₹{Number(job?.salary_min).toLocaleString()} - ₹{Number(job?.salary_max).toLocaleString()}</span>
-              </div>
-              <div className="flex items-center gap-3 text-slate-600 bg-slate-50 p-3 rounded-xl">
-                <Clock size={18} className="text-indigo-500" />
-                <span className="text-sm font-semibold">{job?.job_type?.replace('_', ' ')}</span>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Email Address</label>
+              <div className="relative">
+                <Mail size={18} className="absolute left-4 top-4 text-slate-400" />
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="john@company.com"
+                  className="w-full p-4 pl-12 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all font-medium"
+                />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Key Requirements</h4>
-              <div className="flex flex-wrap gap-2">
-                {job?.requirements?.split('\n').map((req, i) => (
-                  <span key={i} className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-lg border border-indigo-100">
-                    {req.trim()}
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Cover Letter</label>
+              <textarea
+                name="cover_letter"
+                value={formData.cover_letter}
+                onChange={handleInputChange}
+                rows={4}
+                placeholder="Briefly explain why you're a great fit..."
+                className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all font-medium resize-none"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Resume / CV (PDF)</label>
+              <div className="group relative border-2 border-dashed border-slate-200 rounded-2xl hover:border-indigo-400 hover:bg-indigo-50 transition-all">
+                <input
+                  required
+                  type="file"
+                  onChange={handleFileChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                />
+                <div className="p-6 text-center">
+                  <Upload size={24} className="mx-auto text-slate-400 group-hover:text-indigo-500 group-hover:scale-110 transition-all mb-2" />
+                  <span className="text-sm font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">
+                    {formData.resume ? formData.resume.name : "Click to upload resume"}
                   </span>
-                ))}
+                </div>
               </div>
             </div>
-          </div>
+
+            <button
+              disabled={submitting}
+              className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-white transition-all transform active:scale-95 shadow-xl ${
+                submitting 
+                ? "bg-slate-400 cursor-not-allowed" 
+                : "bg-slate-900 hover:bg-indigo-600 shadow-slate-200 hover:shadow-indigo-200"
+              }`}
+            >
+              <div className="flex items-center justify-center gap-3">
+                {submitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Submit Application <Send size={18} />
+                  </>
+                )}
+              </div>
+            </button>
+          </form>
         </div>
 
-        {/* RIGHT SIDE: Application Form */}
-        <div className="lg:col-span-7">
-          <div className="bg-white rounded-[2.5rem] p-8 lg:p-12 border border-slate-200 shadow-xl shadow-slate-200/50">
-            <div className="mb-10">
-              <h3 className="text-2xl font-black text-slate-900">Personal Details</h3>
-              <p className="text-slate-500 text-sm mt-1">We've pre-filled some info from your profile.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
-                  <input required name="full_name" value={formData.full_name} onChange={handleInputChange} type="text" className="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Address</label>
-                  <input required name="email" value={formData.email} onChange={handleInputChange} type="email" className="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
-                <input required name="phone" value={formData.phone} onChange={handleInputChange} type="tel" className="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none" />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cover Letter (Optional)</label>
-                <textarea name="cover_letter" value={formData.cover_letter} onChange={handleInputChange} rows="4" placeholder="Highlight your skills..." className="w-full px-5 py-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:ring-2 focus:ring-indigo-500 transition-all outline-none resize-none"></textarea>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Resume / Portfolio</label>
-                <div className={`relative border-2 border-dashed rounded-3xl p-10 text-center transition-all group ${formData.resume ? 'border-emerald-400 bg-emerald-50/30' : 'border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/30'}`}>
-                  <input required type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                  <div className="flex flex-col items-center">
-                    <div className={`p-4 rounded-2xl mb-4 transition-transform group-hover:scale-110 ${formData.resume ? 'bg-emerald-100 text-emerald-600' : 'bg-white text-slate-400 shadow-sm'}`}>
-                      <Upload size={24} />
-                    </div>
-                    <p className="text-sm font-bold text-slate-700">
-                      {formData.resume ? formData.resume.name : "Select your Resume"}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-tighter">PDF or DOC up to 10MB</p>
-                  </div>
-                </div>
-              </div>
-
-              <button  disabled={submitting} type="submit" className="w-full py-5 bg-slate-900 text-white rounded-[1.5rem] font-bold shadow-xl hover:bg-black hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                {submitting ? "Processing..." : <>Send Application <Send size={18} /></>}
-              </button>
-            </form>
-          </div>
-        </div>
       </div>
     </div>
   );

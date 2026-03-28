@@ -74,7 +74,7 @@ export default function MyApplications() {
             <h3 className="text-xl font-bold text-slate-900">No applications yet</h3>
             <p className="text-slate-500 mt-2 mb-8">Start your career journey by applying to jobs.</p>
             <button 
-              onClick={() => window.location.href = '/find-jobs'} 
+              onClick={() => window.location.href = '/candidate/jobs'} 
               className="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all active:scale-95 shadow-lg shadow-blue-100"
             >
               Browse Jobs
