@@ -1,0 +1,42 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hireflow-ingress
+  namespace: default
+  annotations:
+    # All values MUST be in "quotes" to avoid the 'unmarshal' error
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/group.name: "hireflow-v1"
+    alb.ingress.kubernetes.io/subnets: "subnet-0e4238315b251c5b8, subnet-0820ba00020e99ec2"
+    alb.ingress.kubernetes.io/healthcheck-path: "/api/v1/"
+    alb.ingress.kubernetes.io/success-codes: "200"
+spec:
+  ingressClassName: "alb"
+  rules:
+    - http:
+        paths:
+          - path: "/api/v1/"
+            pathType: "Prefix"
+            backend:
+              service:
+                name: "backend-service"
+                port:
+                  number: 8000
+          # 2. Real-time Chat WebSockets
+          # - path: /ws/
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: backend-service
+          #       port:
+          #         number: 8000
+          
+          # 3. FastAPI AI Service
+          # - path: /api/ai/
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: ai-service
+          #       port:
+          #         number: 8002

@@ -1,0 +1,59 @@
+# --- DJANGO APP (DAPHNE) ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: django
+        image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
+        command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "hireflow_main.asgi:application"]
+        envFrom:
+          - configMapRef:
+              name: hireflow-config
+          - secretRef:      # <--- ADD THIS LINE
+              name: backend-secrets # <--- AND THIS LINE
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+---
+# --- CELERY WORKER ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-worker
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      containers:
+      - name: worker
+        image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
+        command: ["celery", "-A", "hireflow_main", "worker", "--loglevel=info"]
+        envFrom:
+          - configMapRef:
+              name: hireflow-config
+          - secretRef:  
+              name: backend-secret

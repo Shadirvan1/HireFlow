@@ -19,6 +19,8 @@ pyotp
 
 drf-spectacular
 
+whitenoise
+
 celery
 redis
 django-celery-beat

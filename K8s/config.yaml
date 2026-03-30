@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hireflow-config
+data:
+  DB_HOST: "hireflow-db.c1a4cma4007m.ap-south-1.rds.amazonaws.com"
+  DB_PORT: "5432"
+  DB_NAME: "hireflow"
+  REDIS_HOST: "master.hireflow-redis.uvr9zz.aps1.cache.amazonaws.com"
+  REDIS_PORT: "6379"
+  DEBUG: "False"
+  AWS_REGION: "ap-south-1"
