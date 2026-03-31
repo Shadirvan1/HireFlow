@@ -9,7 +9,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Prevent multiple refresh calls at the same time
+
 let isRefreshing = false;
 let failedQueue = [];
 

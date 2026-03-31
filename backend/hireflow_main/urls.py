@@ -21,12 +21,15 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
-
+from django.http import JsonResponse
 from django.conf import settings
 from django.conf.urls.static import static
 
+def health_check(request):
+    return JsonResponse({"status": "ok"}, status=200)
 
 urlpatterns = [
+    path('api/v1/health/', health_check),
     path('admin/', admin.site.urls),
     path("api/<str:version>/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),

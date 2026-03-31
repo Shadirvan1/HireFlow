@@ -60,7 +60,7 @@ spec:
       containers:
       - name: worker
         image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
-        command: ["celery", "-A", "hireflow_main", "worker", "--loglevel=info"]
+        command: ["celery", "-A", "hireflow_main", "worker", "--loglevel=info", "--concurrency=4"]
         envFrom:
           - configMapRef:
               name: hireflow-config

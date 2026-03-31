@@ -16,19 +16,21 @@ FRONTEND_URL = os.getenv("FRONT_END_URL")
 
 
 @shared_task
-def send_verification_email(user):
+def send_verification_email(user_id):
     """
-    Sends account verification email using normal SMTP.
+    Sends account verification email. Accepts user_id to prevent serialization issues.
     """
     try:
+        # Fetch the user inside the task
+        user = User.objects.get(pk=user_id)
+        
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        verification_link = f"{url}/{uid}/{token}/"
+        verification_link = f"{FRONTEND_URL}/{uid}/{token}/"
 
         subject = "Verify Your HireFlow Account"
-
+        
         html_content = f"""
-        <!DOCTYPE html>
         <html>
         <body style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
             <table width="100%" cellspacing="0" cellpadding="0">
@@ -39,14 +41,13 @@ def send_verification_email(user):
                                 <td>
                                     <h2 style="color: #1f2937;">Welcome to HireFlow 👋</h2>
                                     <p>Hi <strong>{user.username}</strong>,</p>
-                                    <p>Thank you for registering with HireFlow. Please confirm your email to activate your account.</p>
+                                    <p>Thank you for registering. Please confirm your email to activate your account.</p>
                                     <p style="text-align:center;">
                                         <a href="{verification_link}" style="background-color:#2563eb;color:#ffffff;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;">Verify Email Address</a>
                                     </p>
-                                    <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                                    <p>If the button doesn't work, copy and paste this link:</p>
                                     <p style="word-break: break-all;">{verification_link}</p>
                                     <hr>
-                                    <p>If you did not create this account, ignore this email.</p>
                                     <p>© HireFlow</p>
                                 </td>
                             </tr>
@@ -58,17 +59,8 @@ def send_verification_email(user):
         </html>
         """
 
-        text_content = f"""
-        Hi {user.username},
+        text_content = f"Hi {user.username},\n\nVerify your email here: {verification_link}"
 
-        Please verify your email by clicking the link below:
-
-        {verification_link}
-
-        If you did not register, ignore this email.
-        """
-
-        
         email = EmailMultiAlternatives(
             subject=subject,
             body=text_content,
@@ -77,11 +69,13 @@ def send_verification_email(user):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
+        
+        return f"Verification email sent to {user.email}"
 
-        print(f"Verification email sent to {user.email}")
-
+    except User.DoesNotExist:
+        return f"User {user_id} not found"
     except Exception as e:
-        print(f"Failed to send verification email to {user.email}: {str(e)}")
+        print(f"Error: {str(e)}")
         raise
 
 

@@ -12,21 +12,25 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    # Health Check
-    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/
-    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
-    alb.ingress.kubernetes.io/success-codes: '200,404,301,302'
+    # Health Check — FIXED: dedicated endpoint + only accept 200
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP        # ALB talks directly to pod over HTTP (bypasses SSL redirect)
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
+    alb.ingress.kubernetes.io/success-codes: '200'              # FIXED: was '200,404,301,302'
 
-    # Support for WebSockets and AI
+    # WebSocket support
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
 spec:
   ingressClassName: alb
   rules:
-    - host: api.hire-flow.online  # <-- UPDATED: Changed from 'www' to 'api'
+    - host: api.hire-flow.online
       http:
         paths:
-          # 1. Backend Service (Django/FastAPI)
           - path: /api/v1/
             pathType: Prefix
             backend:
@@ -59,7 +63,6 @@ spec:
                 port:
                   number: 8000
 
-          # 2. AI Service
           - path: /api/ai/
             pathType: Prefix
             backend:

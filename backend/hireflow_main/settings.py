@@ -25,38 +25,51 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-# ALLOWED_HOSTS = ["*"]
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://127.0.0.1:5173",
-#     ]
 
-ALLOWED_HOSTS = [
-    'www.hire-flow.online', 
-    'hire-flow.online', 
-    'localhost', 
-    '127.0.0.1'
+# ALLOWED_HOSTS = [
+#     'api.hire-flow.online',     
+#     'www.hire-flow.online', 
+#     'hire-flow.online', 
+#     'localhost', 
+#     '127.0.0.1',
+#     '.svc.cluster.local',
+#     '192.168.0.0/16', 
+#     '10.0.0.0/8',
+#     '172.16.0.0/12',
+
+# ]
+ALLOWED_HOSTS = ["*"]
+
+CORS_ALLOWED_ORIGINS = [
+    "https://www.hire-flow.online",
+    "https://hire-flow.online",
+    "http://localhost:5173",  
 ]
+
 
 # CSRF is also strict with HTTPS
 CSRF_TRUSTED_ORIGINS = [
     'https://www.hire-flow.online',
-    'https://hire-flow.online'
+    'https://hire-flow.online',
+    "http://localhost:5173"
 ]
+
+APPEND_SLASH = False  
+
+SECURE_SSL_REDIRECT = False  
+USE_X_FORWARDED_HOST = True   
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
+SESSION_COOKIE_SECURE = True  
+CSRF_COOKIE_SECURE = True      
 
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
 
-SESSION_COOKIE_SECURE = False  
-CSRF_COOKIE_SECURE = False      
-
+SESSION_COOKIE_DOMAIN = ".hire-flow.online"
+CSRF_COOKIE_DOMAIN = ".hire-flow.online"
 
 CORS_ALLOW_CREDENTIALS = True
 # Application definition
@@ -197,15 +210,14 @@ AUTH_USER_MODEL = "accounts.User"
 ROOT_URLCONF = 'hireflow_main.urls'
 
 
-
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
-EMAIL_HOST = os.getenv("EMAIL_HOST")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'email-smtp.ap-south-1.amazonaws.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_HOST_PASSWORD = os.getenv("BREVO_API_KEY")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
-
 
 TEMPLATES = [
     {

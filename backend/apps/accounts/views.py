@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 import random
-
+from django.core.cache import cache
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
 from django.utils import timezone
@@ -56,7 +56,7 @@ from .services.mfa_service import (
 
 from lambda_push.notification_service import send_notification
 from lambda_push.lambda_function import initialize_firebase
-
+from django.db import transaction
 import firebase_config
 
 User = get_user_model()
@@ -72,7 +72,11 @@ class SeekerRegisterView(views.APIView):
         if serializer.is_valid():
             user = serializer.save()
             if not user.is_verified:
-                send_verification_email.delay(user)
+                send_verification_email.apply_async(
+                    args=[user.id],
+                    countdown=2,        
+                )
+               
             return Response(
                 {
                     "message": "Activation link sent successfully.",
@@ -92,7 +96,10 @@ class ResendEmailLinkView(views.APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        send_verification_email.delay(user)
+        send_verification_email.apply_async(
+            args=[user.id],    
+            countdown=2,
+        )
 
         return Response(
             {"message": "Verification link sent successfully"},
@@ -500,10 +507,13 @@ class DeleteAccountRequestView(views.APIView):
             )
 
         # Password is correct — send OTP via Celery
-        send_delete_account_otp.delay(
-            user_id=request.user.id,
-            username=request.user.username,
-            email=request.user.email
+        send_delete_account_otp.apply_async(
+            kwargs={
+                "user_id": request.user.id,
+                "username": request.user.username,
+                "email": request.user.email
+            },
+            countdown=2,
         )
 
         return Response(
