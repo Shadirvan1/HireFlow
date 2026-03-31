@@ -3,7 +3,6 @@ kind: Ingress
 metadata:
   name: hireflow-combined-ingress
   annotations:
-    # AWS Load Balancer Controller Settings
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
@@ -13,18 +12,18 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    # Health Check - Tells AWS how to check if your backend is alive
+    # Health Check
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
     alb.ingress.kubernetes.io/success-codes: '200,404,301,302'
 
-    # Support for WebSockets and long-running AI processes
+    # Support for WebSockets and AI
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
 spec:
   ingressClassName: alb
   rules:
-    - host: www.hire-flow.online  
+    - host: api.hire-flow.online  # <-- UPDATED: Changed from 'www' to 'api'
       http:
         paths:
           # 1. Backend Service (Django/FastAPI)
@@ -68,12 +67,3 @@ spec:
                 name: ai-service
                 port:
                   number: 8002
-
-          
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-service
-                port:
-                  number: 80
