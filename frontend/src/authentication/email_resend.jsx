@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
-import api from "../api/api";
+import api from "../api/api"
+
 
 export default function EmailResend() {
   const [email, setEmail] = useState("");
