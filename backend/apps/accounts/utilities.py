@@ -13,7 +13,7 @@ User = get_user_model()
 
 url = os.getenv("FRONT_END_URL_VERIFY")
 FRONTEND_URL = os.getenv("FRONT_END_URL")
-
+FRONT_END_URL_VERIFY = os.getenv("FRONT_END_URL_VERIFY")
 
 @shared_task
 def send_verification_email(user_id):
@@ -26,7 +26,7 @@ def send_verification_email(user_id):
         
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        verification_link = f"{FRONTEND_URL}/{uid}/{token}/"
+        verification_link = f"{FRONT_END_URL_VERIFY}/{uid}/{token}/"
 
         subject = "Verify Your HireFlow Account"
         

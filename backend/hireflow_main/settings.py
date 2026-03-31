@@ -60,8 +60,6 @@ SECURE_SSL_REDIRECT = False
 USE_X_FORWARDED_HOST = True   
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-
-
 SESSION_COOKIE_SECURE = True  
 CSRF_COOKIE_SECURE = True      
 
@@ -150,21 +148,34 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
+import ssl
+
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = 6379
 
-CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
-CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+
+
+PROTOCOL = "rediss"
+
+
+CELERY_REDIS_BACKEND_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_NONE
+}
+CELERY_BROKER_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_NONE
+}
+
+CELERY_BROKER_URL = f"rediss://{REDIS_HOST}:{REDIS_PORT}/0?ssl_cert_reqs=none"
+CELERY_RESULT_BACKEND = f"rediss://{REDIS_HOST}:{REDIS_PORT}/0?ssl_cert_reqs=none"
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [{
-                "host": REDIS_HOST,
-                "port": REDIS_PORT,
-                "ssl": True,
-            }],  
+                "address": f"rediss://{REDIS_HOST}:{REDIS_PORT}/0",
+                "ssl_context": ssl._create_unverified_context(),
+            }],
         },
     },
 }
@@ -189,6 +200,8 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 
 }
+CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': None}
+CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': None}
 
 ACCESS_COOKIE_NAME = "access_token"  
 
@@ -212,7 +225,7 @@ ROOT_URLCONF = 'hireflow_main.urls'
 
 # settings.py
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'email-smtp.ap-south-1.amazonaws.com'
+EMAIL_HOST = 'smtp-relay.brevo.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")

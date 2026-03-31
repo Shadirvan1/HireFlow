@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import publicApi from '../api/publicapi';
+import api from '../api/api';
 
 const VerifyEmailPage = () => {
   const { uidb64, token } = useParams();
@@ -13,7 +13,7 @@ const VerifyEmailPage = () => {
       try {
         setLoading(true);
 
-        const res = await publicApi.get(
+        const res = await api.get(
           `accounts/verify-email/${uidb64}/${token}/`
         );
 

@@ -72,10 +72,7 @@ class SeekerRegisterView(views.APIView):
         if serializer.is_valid():
             user = serializer.save()
             if not user.is_verified:
-                send_verification_email.apply_async(
-                    args=[user.id],
-                    countdown=2,        
-                )
+                send_verification_email.delay(user.id)
                
             return Response(
                 {
@@ -507,13 +504,10 @@ class DeleteAccountRequestView(views.APIView):
             )
 
         # Password is correct — send OTP via Celery
-        send_delete_account_otp.apply_async(
-            kwargs={
-                "user_id": request.user.id,
-                "username": request.user.username,
-                "email": request.user.email
-            },
-            countdown=2,
+        send_delete_account_otp.delay(
+            user_id=request.user.id,
+            username=request.user.username,
+            email=request.user.email
         )
 
         return Response(

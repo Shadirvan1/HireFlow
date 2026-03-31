@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import api from "../api/api";
 import { useNavigate } from "react-router-dom";
-import publicApi from "../api/publicapi";
+
 
 function HRRegister() {
   const [formData, setFormData] = useState({
@@ -40,7 +40,7 @@ function HRRegister() {
     setNonFieldError("");
 
     try {
-      await publicApi.post("accounts/hr/register/", formData);
+      await api.post("accounts/hr/register/", formData);
       localStorage.setItem("email")
 
       alert("Registered Successfully ");
