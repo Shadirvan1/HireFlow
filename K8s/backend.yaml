@@ -1,4 +1,6 @@
-# --- DJANGO APP (DAPHNE) ---
+# ==========================================
+# 1. DJANGO BACKEND (DAPHNE)
+# ==========================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,11 +19,13 @@ spec:
       - name: django
         image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
         command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "hireflow_main.asgi:application"]
+        ports:
+        - containerPort: 8000
         envFrom:
           - configMapRef:
               name: hireflow-config
-          - secretRef:      # <--- ADD THIS LINE
-              name: backend-secrets # <--- AND THIS LINE
+          - secretRef:      
+              name: backend-secrets
 ---
 apiVersion: v1
 kind: Service
@@ -31,9 +35,14 @@ spec:
   selector:
     app: backend
   ports:
-    - port: 8000
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+
 ---
-# --- CELERY WORKER ---
+# ==========================================
+# 2. CELERY WORKER
+# ==========================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -56,4 +65,32 @@ spec:
           - configMapRef:
               name: hireflow-config
           - secretRef:  
-              name: backend-secret
+              name: backend-secrets
+
+---
+# ==========================================
+# 3. CELERY BEAT (SCHEDULER)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+spec:
+  replicas: 1 # ALWAYS keep this at 1 to avoid duplicate tasks
+  selector:
+    matchLabels:
+      app: celery-beat
+  template:
+    metadata:
+      labels:
+        app: celery-beat
+    spec:
+      containers:
+      - name: beat
+        image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
+        command: ["celery", "-A", "hireflow_main", "beat", "--loglevel=info"]
+        envFrom:
+          - configMapRef:
+              name: hireflow-config
+          - secretRef:  
+              name: backend-secrets

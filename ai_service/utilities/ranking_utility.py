@@ -4,11 +4,7 @@ from collections import defaultdict
 from database.redis_client import redis_client
 from services.llm_reranking import rerank_candidates
 
-client = chromadb.HttpClient(host="chroma", port=8000)
-
-resume_collection = client.get_collection("resumes")
-job_collection = client.get_collection("jobs")
-
+from vector_db.chroma_client import resume_collection,job_collection
 
 async def perform_ranking_logic(job_id: str, company_id: str):
 

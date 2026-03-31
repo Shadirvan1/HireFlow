@@ -22,6 +22,8 @@ from drf_spectacular.views import (
     SpectacularRedocView,
 )
 
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [
@@ -36,4 +38,4 @@ urlpatterns = [
     path('api/<str:version>/ai/', include("apps.live_chat.urls")),
     path('api/<str:version>/chat/', include("apps.live_chat.urls")),
     
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

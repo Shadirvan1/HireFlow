@@ -27,14 +27,14 @@ def set_tokens_in_response(response, tokens):
         key="access_token",
         value=tokens["access"],
         httponly=True,
-        secure=False, 
-        samesite="Lax"
+        secure=True,         
+       samesite="Lax"
     )
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh"],
         httponly=True,
-        secure=False, 
+        secure=True,
         samesite="Lax"
     )
     return response

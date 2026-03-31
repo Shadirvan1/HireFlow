@@ -5,15 +5,13 @@ from collections import defaultdict
 from database.redis_client import redis_client
 from services.llm_reranking import rerank_candidates
 from utilities.chroma_format import format_chroma_results
+from vector_db.chroma_client import resume_collection,job_collection
 from fastapi import HTTPException
 
 
 router = APIRouter()
 
-client = chromadb.HttpClient(host="chroma", port=8000)
 
-resume_collection = client.get_collection("resumes")
-job_collection = client.get_collection("jobs")
 
 
 @router.get("/rank/{job_id}")

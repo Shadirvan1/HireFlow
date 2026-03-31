@@ -8,7 +8,12 @@ from fastapi.security.api_key import APIKeyHeader
 
 import os
 
-app = FastAPI()
+app = FastAPI(
+    title="HireFlow AI Service",
+    docs_url="/api/ai/docs",
+    redoc_url="/api/ai/redoc",
+    openapi_url="/api/ai/openapi.json"
+)
 
 
 

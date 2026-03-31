@@ -9,7 +9,7 @@ def send_daily_job_notifications():
 
 
     jobs = Job.objects.filter(is_approve=True,is_active=True).order_by('-id')[:5]
-    for candidate in CandidateProfile.objects.filter(is_active=True,):
+    for candidate in CandidateProfile.objects.filter(is_active=True,)[:20]:
 
         job_rows = ""
         for job in jobs:

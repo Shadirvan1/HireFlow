@@ -32,4 +32,4 @@ channels-redis
 daphne
 
 cloudinary 
-django-cloudinary-storage
+django-cloudinary-storage>=0.3.0
