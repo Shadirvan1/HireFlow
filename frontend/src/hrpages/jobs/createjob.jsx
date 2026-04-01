@@ -32,10 +32,13 @@ export default function CreateJob() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    let finalValue = type === "checkbox" ? checked : value;
+
+    if (name === "ats_ascore") {
+      finalValue = Math.max(60, Number(value));
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: finalValue }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -99,14 +102,14 @@ export default function CreateJob() {
   return (
     <div className="min-h-screen bg-[#080a0f] text-white">
 
-      {/* Subtle background glow */}
+      {/* Background glow */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-[-15%] left-[-5%] w-[35%] h-[50%] bg-purple-900/10 blur-[140px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[30%] h-[40%] bg-cyan-900/10 blur-[140px] rounded-full" />
         <div className="absolute top-[40%] left-[50%] w-[20%] h-[30%] bg-blue-900/8 blur-[100px] rounded-full" />
       </div>
 
-      {/* Top nav bar */}
+      {/* Sticky top nav */}
       <div className="border-b border-gray-800/60 bg-[#080a0f]/80 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -125,7 +128,6 @@ export default function CreateJob() {
               <span className="text-sm font-semibold text-gray-200">HireFlow</span>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 hidden sm:block">Draft autosaved</span>
             <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -352,19 +354,51 @@ export default function CreateJob() {
                   <label className={labelStyle}>
                     <Target className="w-3.5 h-3.5 text-cyan-400" /> Min. ATS match score (%)
                   </label>
-                  <div className="space-y-2">
-                    <input
-                      type="range" name="ats_ascore" min="0" max="100"
-                      value={formData.ats_ascore} onChange={handleChange}
-                      className="w-full accent-cyan-500 cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>0%</span>
-                      <span className="text-cyan-400 font-bold text-sm">{formData.ats_ascore}%</span>
-                      <span>100%</span>
-                    </div>
+
+                  {/* Score display badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs text-gray-500">Minimum allowed: 60%</span>
+                    <span className="bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-sm font-bold px-3 py-1 rounded-lg">
+                      {formData.ats_ascore}%
+                    </span>
                   </div>
+
+                  <input
+                    type="range" name="ats_ascore"
+                    min="60" max="100" step="1"
+                    value={formData.ats_ascore}
+                    onChange={handleChange}
+                    className="w-full accent-cyan-500 cursor-pointer"
+                  />
+
+                  <div className="flex justify-between text-xs text-gray-600 mt-1.5">
+                    <span className="text-gray-500 font-medium">60% <span className="text-gray-700">(min)</span></span>
+                    <span className="text-gray-500 font-medium">100% <span className="text-gray-700">(max)</span></span>
+                  </div>
+
+                  {/* Visual tick marks */}
+                  <div className="flex justify-between mt-1 px-0.5">
+                    {[60, 70, 80, 90, 100].map((tick) => (
+                      <div key={tick} className="flex flex-col items-center gap-0.5">
+                        <div className={`w-px h-1.5 rounded-full ${
+                          formData.ats_ascore >= tick ? "bg-cyan-500" : "bg-gray-700"
+                        }`} />
+                        <span className={`text-[10px] ${
+                          formData.ats_ascore >= tick ? "text-cyan-500" : "text-gray-700"
+                        }`}>{tick}</span>
+                      </div>
+                    ))}
+                  </div>
+
                   <FieldError field="ats_ascore" />
+                </div>
+
+                {/* Info card */}
+                <div className="bg-cyan-950/30 border border-cyan-800/30 rounded-xl p-4 flex flex-col justify-center">
+                  <p className="text-xs text-cyan-400 font-semibold mb-1">What is ATS score?</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">
+                    The ATS (Applicant Tracking Score) measures how well a candidate's resume matches your job requirements. Only candidates above this threshold will be shortlisted automatically.
+                  </p>
                 </div>
               </div>
             )}
@@ -397,7 +431,7 @@ export default function CreateJob() {
                 </>
               ) : success ? (
                 <>
-                  <div className="w-4 h-4 text-green-400">✓</div>
+                  <span className="text-green-400">✓</span>
                   Published!
                 </>
               ) : (
