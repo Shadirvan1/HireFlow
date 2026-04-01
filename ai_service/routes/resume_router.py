@@ -115,13 +115,7 @@ async def process_resume(
         cache_key = f"job_ranking:{company_id}:{job_embedding_id}"
         redis_client.delete(cache_key)
         
-        logs_collection.insert_one({
-            "application_id": application_id,
-            "score": final_score,
-            "resume_url": resume_url,
-            "n8n_sent": n8n_triggered,
-            "timestamp": datetime.datetime.now(datetime.timezone.utc)
-        })
+       
     
         return {
             "status": "success",

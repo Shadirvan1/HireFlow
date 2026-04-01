@@ -18,6 +18,8 @@ def sanitize_metadata(data: dict):
         else:
             sanitized[k] = str(v) if v is not None else ""
     return sanitized
+
+
 @router.post("/process-job")
 async def process_job(jd: dict):
     embedding_id = jd.get("job_id") or str(uuid.uuid4())
@@ -55,7 +57,7 @@ async def process_job(jd: dict):
         "reasoning": trust_info.get("reasoning", ""),
         "job_post": jd
     }
-    logs_collection.insert_one(log_entry)
+    
 
     
 

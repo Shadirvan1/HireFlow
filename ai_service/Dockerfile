@@ -1,30 +1,33 @@
-FROM python:3.11-slim
-
-ENV PYTHONUNBUFFERED=1
-ENV PIP_NO_CACHE_DIR=1
-ENV PIP_DISABLE_PIP_VERSION_CHECK=1
-
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
+# Install only what is needed to build C-extensions
 RUN apt-get update && apt-get install -y \
     gcc \
     build-essential \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
-RUN pip install --upgrade pip
+# Use a cache mount to speed up subsequent pip installs
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --prefix=/install -r requirements.txt
 
 
-RUN pip install --default-timeout=1000 -r requirements.txt
+# Stage 2: Final Slim Image
+FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1
 
+WORKDIR /app
+
+# Copy only the installed packages from the builder
+COPY --from=builder /install /usr/local
 COPY . .
-
 
 EXPOSE 8002
 
-
+# Using the JSON array syntax for CMD is faster and more stable
 CMD ["uvicorn", "app_main.main:app", "--host", "0.0.0.0", "--port", "8002"]

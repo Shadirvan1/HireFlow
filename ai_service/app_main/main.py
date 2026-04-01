@@ -11,10 +11,11 @@ import os
 app = FastAPI(
     title="HireFlow AI Service",
     docs_url="/api/ai/docs",
-    redoc_url="/api/ai/redoc",
-    openapi_url="/api/ai/openapi.json"
+    redoc_url="/api/ai/redoc"
 )
-
+@app.get("/api/v1/health/")
+def health_check():
+    return {"status": "healthy"}
 
 
 

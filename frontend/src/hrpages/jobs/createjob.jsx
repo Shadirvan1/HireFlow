@@ -39,7 +39,12 @@ export default function CreateJob() {
     }
 
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
+
+    // Only update errors state if there's actually an error to clear
+    setErrors((prev) => {
+      if (!prev[name]) return prev; // return same reference, no re-render
+      return { ...prev, [name]: "" };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -96,7 +101,6 @@ export default function CreateJob() {
     { value: "PART_TIME", label: "Part Time" },
     { value: "CONTRACT", label: "Contract" },
     { value: "INTERNSHIP", label: "Internship" },
-    { value: "FREELANCE", label: "Freelance" },
   ];
 
   return (

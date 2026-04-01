@@ -49,6 +49,7 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
             )
             response.raise_for_status()
             result = response.json()
+            print(result)
 
             if result.get("trusted"):
                 instance.is_approve = True
