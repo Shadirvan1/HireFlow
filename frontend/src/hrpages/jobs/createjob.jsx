@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
-import { Briefcase, MapPin, DollarSign, Calendar, Cpu, Mail, Target, Clock } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, Calendar, Cpu, Target, Clock, Loader2, Rocket } from "lucide-react";
 
 export default function CreateJob() {
   const navigate = useNavigate();
+
+  // New state for loading and success
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -22,8 +27,6 @@ export default function CreateJob() {
     ats_ascore: 70,
   });
 
-  const [errors, setErrors] = useState({});
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -35,13 +38,21 @@ export default function CreateJob() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors({});
+    setLoading(true); // Start loading
+
     try {
       await api.post("jobs/hr/create/job/", formData);
-      navigate("/hr/jobs");
+      setSuccess(true); // Trigger success state
+      
+      // Delay navigation slightly so user sees the success state
+      setTimeout(() => {
+        navigate("/hr/jobs");
+      }, 1500);
     } catch (error) {
       if (error.response?.data) {
         setErrors(error.response.data);
       }
+      setLoading(false); // Stop loading if error occurs
     }
   };
 
@@ -50,7 +61,6 @@ export default function CreateJob() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-4 md:p-12 selection:bg-cyan-500/30">
-      {/* Abstract Background Glows */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-900/20 blur-[120px] rounded-full" />
@@ -70,22 +80,19 @@ export default function CreateJob() {
             <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
               <Briefcase className="text-cyan-400 w-5 h-5" /> Role Identity
             </h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col">
                 <label className={labelStyle}><Target className="w-4 h-4" /> Job Title *</label>
-                <input type="text" name="title" value={formData.title} onChange={handleChange} className={inputStyle} placeholder="e.g. Senior Backend Engineer" />
+                <input type="text" name="title" value={formData.title} onChange={handleChange} className={inputStyle} placeholder="e.g. Senior Backend Engineer" required />
                 {errors.title && <span className="text-xs text-red-400 mt-1">{errors.title[0]}</span>}
               </div>
-
               <div className="flex flex-col">
                 <label className={labelStyle}><MapPin className="w-4 h-4" /> Location</label>
                 <input type="text" name="location" value={formData.location} onChange={handleChange} className={inputStyle} placeholder="Remote, New York, etc." />
               </div>
-
               <div className="md:col-span-2">
                 <label className={labelStyle}>Description *</label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows="4" className={inputStyle} placeholder="Describe the core mission of this role..." />
+                <textarea name="description" value={formData.description} onChange={handleChange} rows="4" className={inputStyle} placeholder="Describe the core mission of this role..." required />
               </div>
             </div>
           </section>
@@ -105,10 +112,8 @@ export default function CreateJob() {
                 <div className="w-14 h-7 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-cyan-600"></div>
               </label>
             </div>
-
             {formData.is_automatic && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-4 duration-300">
-              
                 <div className="flex flex-col">
                   <label className={labelStyle}><Target className="w-4 h-4" /> Min. ATS Match Score (%)</label>
                   <input type="number" name="ats_ascore" value={formData.ats_ascore} onChange={handleChange} className={inputStyle} />
@@ -117,6 +122,7 @@ export default function CreateJob() {
             )}
           </section>
 
+          {/* Logistics Section */}
           <section className="bg-gray-900/40 backdrop-blur-md border border-gray-800 p-6 md:p-8 rounded-3xl shadow-xl">
             <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
               <DollarSign className="text-green-400 w-5 h-5" /> Logistics & Requirements
@@ -140,12 +146,40 @@ export default function CreateJob() {
             </div>
           </section>
 
+          {/* Action Buttons with Loading State */}
           <div className="flex items-center justify-end gap-4 pb-12">
-            <button type="button" onClick={() => navigate(-1)} className="px-8 py-3 rounded-xl font-medium text-gray-400 hover:text-white transition-colors">
+            <button 
+              type="button" 
+              onClick={() => navigate(-1)} 
+              disabled={loading}
+              className="px-8 py-3 rounded-xl font-medium text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+            >
               Cancel
             </button>
-            <button type="submit" className="px-10 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all">
-              Launch Job Post
+            
+            <button 
+              type="submit" 
+              disabled={loading || success}
+              className={`flex items-center gap-2 px-10 py-3 rounded-xl font-bold shadow-lg transition-all 
+                ${success 
+                  ? 'bg-green-600 shadow-green-500/25' 
+                  : 'bg-gradient-to-r from-cyan-500 to-blue-600 shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98]'
+                } 
+                disabled:opacity-80 disabled:cursor-not-allowed`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Publishing...
+                </>
+              ) : success ? (
+                <>
+                  <Rocket className="w-5 h-5 animate-bounce" />
+                  Success!
+                </>
+              ) : (
+                "Launch Job Post"
+              )}
             </button>
           </div>
         </form>
