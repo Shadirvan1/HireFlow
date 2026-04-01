@@ -31,10 +31,11 @@ from .serializers import (
     ApplicationStatusUpdateSerializer,
     HRApprovalSerializer
 )
+from django.conf import settings
 
 User = get_user_model()
 
-FASTAPI_URL = "http://ai_service:8002/api/ai"
+FASTAPI_URL = settings.FASTAPI_URL
 
 
 class StandardResultsSetPagination(PageNumberPagination):

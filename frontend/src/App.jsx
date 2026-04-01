@@ -44,6 +44,7 @@ import HiredCandidatesRoster from "./hrpages/jobs/hiredcandidates";
 import ChangePasswordPage from "./authentication/change-password";
 import DeleteAccount from "./hrpages/security/delete-account";
 import MfaLogin from "./authentication/login-mfa";
+import AdminOutlet from "./adminpages/outlet";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -102,11 +103,9 @@ function App() {
           
           
           {/* ---- admin pages ---- */}
-          <Route path="/admin" element={<Sidebar />}>
-
-
-          <Route path="hr/details" element={<ProtectedRoute allowedRoles={['ADMIN']}><HR_details /></ProtectedRoute>} />
-          <Route path="dashboard" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin"element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminOutlet /></ProtectedRoute>}>
+          <Route path="hr/details" element={<HR_details />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
           </Route>
 
           

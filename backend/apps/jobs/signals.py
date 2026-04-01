@@ -6,8 +6,9 @@ import os
 from .models import Job, JobApplication
 from lambda_push.notification_service import send_notification
 from apps.accounts.models import HRProfile
+from django.conf import settings
 
-FASTAPI_URL ="http://ai_service:8002/api/ai" 
+FASTAPI_URL = settings.FASTAPI_URL
 
 def get_auth_headers():
     return {

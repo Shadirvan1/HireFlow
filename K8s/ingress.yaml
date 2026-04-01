@@ -7,20 +7,17 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     
-    # SSL/TLS Configuration
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:277436022464:certificate/667f8eef-abf7-4352-afdf-cbbaab1c1fee
+    # 1. NEW SSL/TLS Certificate (The Multi-Domain one)
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:277436022464:certificate/cb865750-0315-427d-8072-3fa705271670
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    # Health Check — FIXED: dedicated endpoint + only accept 200
+    # Health Check
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
-    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP        # ALB talks directly to pod over HTTP (bypasses SSL redirect)
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
-    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
-    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
-    alb.ingress.kubernetes.io/unhealthy-threshold-count: '3'
-    alb.ingress.kubernetes.io/success-codes: '200'              # FIXED: was '200,404,301,302'
+    alb.ingress.kubernetes.io/success-codes: '200'
 
     # WebSocket support
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
@@ -28,6 +25,19 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
+    # 2. FRONTEND RULE (hire-flow.online)
+    - host: hire-flow.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service  # Ensure this matches your frontend service name
+                port:
+                  number: 80
+
+    # 3. BACKEND RULE (api.hire-flow.online)
     - host: api.hire-flow.online
       http:
         paths:
@@ -38,7 +48,6 @@ spec:
                 name: backend-service
                 port:
                   number: 8000
-          
           - path: /admin/
             pathType: Prefix
             backend:
@@ -46,7 +55,6 @@ spec:
                 name: backend-service
                 port:
                   number: 8000
-
           - path: /static/
             pathType: Prefix
             backend:
@@ -54,7 +62,6 @@ spec:
                 name: backend-service
                 port:
                   number: 8000
-
           - path: /ws/
             pathType: Prefix
             backend:
@@ -62,7 +69,6 @@ spec:
                 name: backend-service
                 port:
                   number: 8000
-
           - path: /api/ai/
             pathType: Prefix
             backend:

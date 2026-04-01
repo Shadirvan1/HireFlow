@@ -3,15 +3,16 @@ from rest_framework.response import Response
 from rest_framework import status
 import os
 import requests
-from django.conf import settings
 
+from django.conf import settings
 from .serializers import AIChatSerializer
 from apps.accounts.models import Company
 from rest_framework.permissions import IsAuthenticated
 
 from dynamodb.services.ai_chat_history import save_ai_chat_history, get_ai_chat_history
 
-FASTAPI_URL = "http://ai_service:8002/api/ai" 
+FASTAPI_URL = settings.FASTAPI_URL
+
 
 
 
