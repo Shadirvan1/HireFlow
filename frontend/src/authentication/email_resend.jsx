@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from "react";
-
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/api"
-
+import api from "../api/api";
 
 export default function EmailResend() {
   const [email, setEmail] = useState("");
@@ -10,8 +8,11 @@ export default function EmailResend() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [countdown, setCountdown] = useState(0);
 
-  const navigate=useNavigate()
+  const intervalRef = useRef(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     const storedEmail = localStorage.getItem("email");
     if (storedEmail) {
@@ -19,6 +20,23 @@ export default function EmailResend() {
       setDisabled(true);
     }
   }, []);
+
+  useEffect(() => {
+    return () => clearInterval(intervalRef.current);
+  }, []);
+
+  const startTimer = () => {
+    setCountdown(60);
+    intervalRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(intervalRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handleEditEmail = () => {
     setDisabled(false);
@@ -34,7 +52,6 @@ export default function EmailResend() {
       const response = await api.post("accounts/resend/link/", {
         email: email,
       });
-
       setMessage(response.data.message || "Verification link resent successfully!");
     } catch (err) {
       if (err.response?.data?.error) {
@@ -44,6 +61,7 @@ export default function EmailResend() {
       }
     } finally {
       setLoading(false);
+      startTimer();
     }
   };
 
@@ -65,10 +83,11 @@ export default function EmailResend() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 transition duration-200 ${
-                error ? "border-red-500 bg-red-50" : "border-gray-300 focus:ring-indigo-500"
+                error
+                  ? "border-red-500 bg-red-50"
+                  : "border-gray-300 focus:ring-indigo-500"
               }`}
             />
-
             {disabled && (
               <p
                 onClick={handleEditEmail}
@@ -93,21 +112,39 @@ export default function EmailResend() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || countdown > 0}
             className={`w-full py-2 rounded-lg font-semibold text-white transition duration-300 flex items-center justify-center ${
-              loading
+              loading || countdown > 0
                 ? "bg-indigo-400 cursor-not-allowed"
                 : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
             {loading ? (
               <div className="w-5 h-5 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : countdown > 0 ? (
+              `Resend in ${countdown}s`
             ) : (
               "Resend Link"
             )}
           </button>
+
+          {countdown > 0 && (
+            <div>
+              <div className="w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${(countdown / 60) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-indigo-500 text-center mt-1">
+                You can resend in {countdown} second{countdown !== 1 ? "s" : ""}
+              </p>
+            </div>
+          )}
+
         </form>
-         <p className="text-center text-sm text-gray-600 mt-6">
+
+        <p className="text-center text-sm text-gray-600 mt-6">
           Go to login page{" "}
           <span
             onClick={() => navigate("/login")}

@@ -7,7 +7,7 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     
-    # 1. NEW SSL/TLS Certificate (The Multi-Domain one)
+    # Use the Issued Wildcard ARN
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:277436022464:certificate/cb865750-0315-427d-8072-3fa705271670
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
@@ -16,16 +16,14 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
-    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
     alb.ingress.kubernetes.io/success-codes: '200'
-
-    # WebSocket support
+    
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
 spec:
   ingressClassName: alb
   rules:
-    # 2. FRONTEND RULE (hire-flow.online)
+    # Main Frontend
     - host: hire-flow.online
       http:
         paths:
@@ -33,11 +31,21 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: frontend-service  # Ensure this matches your frontend service name
+                name: frontend-service
                 port:
                   number: 80
-
-    # 3. BACKEND RULE (api.hire-flow.online)
+    # WWW Frontend
+    - host: www.hire-flow.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+    # API
     - host: api.hire-flow.online
       http:
         paths:
@@ -48,28 +56,22 @@ spec:
                 name: backend-service
                 port:
                   number: 8000
-          - path: /admin/
+    # n8n
+    - host: n8n.hire-flow.online
+      http:
+        paths:
+          - path: /
             pathType: Prefix
             backend:
               service:
-                name: backend-service
+                name: n8n
                 port:
-                  number: 8000
-          - path: /static/
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 8000
-          - path: /ws/
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-service
-                port:
-                  number: 8000
-          - path: /api/ai/
+                  number: 5678
+    # AI
+    - host: ai.hire-flow.online
+      http:
+        paths:
+          - path: /
             pathType: Prefix
             backend:
               service:

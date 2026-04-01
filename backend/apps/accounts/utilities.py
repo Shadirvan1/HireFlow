@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 url = os.getenv("FRONT_END_URL_VERIFY")
-FRONTEND_URL = os.getenv("FRONT_END_URL")
+
 FRONT_END_URL_VERIFY = os.getenv("FRONT_END_URL_VERIFY")
 
 @shared_task

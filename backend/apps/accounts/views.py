@@ -171,7 +171,7 @@ class GoogleAuthenticationView(views.APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = serializer.save()
+        user = serializer.save(is_verified=True)
 
         tokens = create_tokens_for_user(user)
 

@@ -50,7 +50,7 @@ def send_daily_job_notifications():
 
                             <tr>
                                 <td align="center" style="padding-top:20px;">
-                                    <a href="http://localhost:5173/candidate/jobs" 
+                                    <a href="https://www.hire-flow.online:5173/candidate/jobs" 
                                        style="background:#4CAF50;color:white;padding:12px 25px;
                                        text-decoration:none;border-radius:5px;">
                                        View More Jobs
