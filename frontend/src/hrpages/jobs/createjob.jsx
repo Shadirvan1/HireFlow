@@ -7,7 +7,7 @@ import {
   ChevronLeft, Rocket, Sparkles
 } from "lucide-react";
 
-/** * UI COMPONENTS (Moved outside to prevent re-mounting on every keystroke)
+/** * UI COMPONENTS (Defined outside to prevent re-mounting/scrolling issues)
  */
 const SectionCard = ({ children, className = "" }) => (
   <div className={`bg-[#0d0f16] border border-gray-800/80 rounded-2xl p-6 md:p-7 shadow-xl ${className}`}>
@@ -63,7 +63,6 @@ export default function CreateJob() {
     experience_required: 0,
     deadline: "",
     is_automatic: false,
-    is_interviewer: "",
     ats_ascore: 70,
   });
 
@@ -72,12 +71,11 @@ export default function CreateJob() {
     let finalValue = type === "checkbox" ? checked : value;
 
     if (name === "ats_ascore") {
-      finalValue = Math.max(60, Number(value));
+      finalValue = Number(value);
     }
 
     setFormData((prev) => ({ ...prev, [name]: finalValue }));
 
-    // Clear specific error when user starts typing
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -114,71 +112,53 @@ export default function CreateJob() {
         <div className="absolute bottom-[-10%] right-[-5%] w-[30%] h-[40%] bg-cyan-900/10 blur-[140px] rounded-full" />
       </div>
 
-      {/* Sticky top nav */}
+      {/* Nav */}
       <div className="border-b border-gray-800/60 bg-[#080a0f]/80 backdrop-blur-md sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors text-sm font-medium"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </button>
-            <span className="text-gray-700">|</span>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <Briefcase className="w-3.5 h-3.5 text-white" />
-              </div>
-              <span className="text-sm font-semibold text-gray-200">HireFlow</span>
-            </div>
-          </div>
+          <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-gray-400 hover:text-white text-sm font-medium">
+            <ChevronLeft className="w-4 h-4" /> Back
+          </button>
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <Briefcase className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-sm font-semibold text-gray-200">HireFlow</span>
           </div>
+          <div className="w-10" /> {/* Spacer */}
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 md:px-8 py-10">
         <div className="mb-10">
           <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-3 py-1 text-xs text-cyan-400 font-medium mb-4">
-            <Sparkles className="w-3 h-3" />
-            New job posting
+            <Sparkles className="w-3 h-3" /> New Job Posting
           </div>
           <h1 className="text-3xl font-bold text-white tracking-tight">Create a new opportunity</h1>
         </div>
 
-        {success && (
-          <div className="mb-6 bg-green-500/10 border border-green-500/30 rounded-2xl px-5 py-4 flex items-center gap-3">
-            <Rocket className="w-4 h-4 text-green-400" />
-            <p className="text-green-400 text-sm font-semibold">Job posted successfully!</p>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Section 1: Role Identity */}
           <SectionCard>
             <SectionHeader icon={<Briefcase className="w-4 h-4" />} title="Role Identity" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label className={labelStyle}><Target className="w-3.5 h-3.5" /> Job title *</label>
-                <input type="text" name="title" value={formData.title} onChange={handleChange} className={inputStyle} />
+                <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="e.g. Frontend Developer" className={inputStyle} />
                 <FieldError errors={errors} field="title" />
               </div>
               <div>
                 <label className={labelStyle}><MapPin className="w-3.5 h-3.5" /> Location</label>
-                <input type="text" name="location" value={formData.location} onChange={handleChange} className={inputStyle} />
-                <FieldError errors={errors} field="location" />
+                <input type="text" name="location" value={formData.location} onChange={handleChange} placeholder="Remote" className={inputStyle} />
               </div>
               <div>
                 <label className={labelStyle}>Job type</label>
                 <select name="job_type" value={formData.job_type} onChange={handleChange} className={inputStyle}>
-                  {jobTypes.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  {jobTypes.map((t) => <option key={t.value} value={t.value} className="bg-[#0f1117]">{t.label}</option>)}
                 </select>
               </div>
               <div>
                 <label className={labelStyle}><Clock className="w-3.5 h-3.5" /> Experience (years)</label>
                 <input type="number" name="experience_required" value={formData.experience_required} onChange={handleChange} className={inputStyle} />
-                <FieldError errors={errors} field="experience_required" />
               </div>
               <div className="md:col-span-2">
                 <label className={labelStyle}><FileText className="w-3.5 h-3.5" /> Description *</label>
@@ -188,46 +168,79 @@ export default function CreateJob() {
             </div>
           </SectionCard>
 
-          <SectionCard>
-            <SectionHeader icon={<DollarSign className="w-4 h-4" />} title="Logistics" iconColor="text-green-400" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div>
-                <label className={labelStyle}>Min salary</label>
-                <input type="number" name="salary_min" value={formData.salary_min} onChange={handleChange} className={inputStyle} />
-              </div>
-              <div>
-                <label className={labelStyle}>Max salary</label>
-                <input type="number" name="salary_max" value={formData.salary_max} onChange={handleChange} className={inputStyle} />
-              </div>
-              <div>
-                <label className={labelStyle}>Deadline</label>
-                <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} className={inputStyle} />
-              </div>
-            </div>
-          </SectionCard>
-
-          <div className={`rounded-2xl border-2 p-6 transition-all duration-500 ${formData.is_automatic ? "border-cyan-500/40 bg-cyan-950/10" : "border-gray-800/80 bg-[#0d0f16]"}`}>
-            <div className="flex items-start justify-between">
+          {/* Section 2: AI Automation & ATS SCORE */}
+          <div className={`rounded-2xl border-2 p-6 md:p-7 transition-all duration-500 ${
+            formData.is_automatic ? "border-cyan-500/40 bg-cyan-950/10" : "border-gray-800/80 bg-[#0d0f16]"
+          }`}>
+            <div className="flex items-start justify-between mb-2">
               <div className="flex items-start gap-3">
-                <Cpu className={`w-9 h-9 p-2 rounded-xl ${formData.is_automatic ? "bg-cyan-500/20 text-cyan-400" : "bg-gray-800 text-gray-500"}`} />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  formData.is_automatic ? "bg-cyan-500/20 text-cyan-400" : "bg-gray-800 text-gray-500"
+                }`}>
+                  <Cpu className="w-4 h-4" />
+                </div>
                 <div>
                   <h3 className="text-base font-bold text-white">AI Recruitment Pilot</h3>
-                  <p className="text-xs text-gray-500">Automate scoring and invites.</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Let AI score candidates automatically.</p>
                 </div>
               </div>
+
               <label className="relative inline-flex items-center cursor-pointer">
                 <input type="checkbox" name="is_automatic" checked={formData.is_automatic} onChange={handleChange} className="sr-only peer" />
                 <div className="w-12 h-6 bg-gray-700 rounded-full peer peer-checked:bg-cyan-600 after:content-[''] after:absolute after:top-0.5 after:left-[3px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-6" />
               </label>
             </div>
+
+            {/* ATS SCORE SLIDER - Only shows when automated is true */}
+            {formData.is_automatic && (
+              <div className="mt-6 pt-5 border-t border-cyan-800/30 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <label className={labelStyle}><Target className="w-3.5 h-3.5 text-cyan-400" /> Min. ATS Score (%)</label>
+                    <span className="bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 text-sm font-bold px-3 py-1 rounded-lg">
+                      {formData.ats_ascore}%
+                    </span>
+                  </div>
+                  
+                  <input
+                    type="range"
+                    name="ats_ascore"
+                    min="60"
+                    max="100"
+                    step="1"
+                    value={formData.ats_ascore}
+                    onChange={handleChange}
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                  />
+                  
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-3 px-1">
+                    <span>60% (Lenient)</span>
+                    <span>80% (Recommended)</span>
+                    <span>100% (Strict)</span>
+                  </div>
+                </div>
+
+                <div className="bg-cyan-950/30 border border-cyan-800/30 rounded-xl p-4">
+                  <p className="text-xs text-cyan-400 font-semibold mb-1">How it works</p>
+                  <p className="text-xs text-gray-400 leading-relaxed">
+                    Candidates with a match score lower than <b>{formData.ats_ascore}%</b> will be automatically filtered out. Higher scores ensure better quality but fewer candidates.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center justify-between pt-2 pb-10">
-            <button type="button" onClick={() => navigate(-1)} className="text-gray-400 hover:text-white text-sm font-medium">Cancel</button>
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-4">
+            <button type="button" onClick={() => navigate(-1)} className="px-6 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition-all">
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={loading || success}
-              className={`px-8 py-2.5 rounded-xl text-sm font-bold transition-all ${loading || success ? "bg-cyan-700/50" : "bg-gradient-to-r from-cyan-500 to-blue-600 text-white"}`}
+              className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                loading || success ? "bg-gray-800 text-gray-500" : "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20 hover:scale-[1.02]"
+              }`}
             >
               {loading ? "Publishing..." : success ? "Published!" : "Launch Job Post"}
             </button>
