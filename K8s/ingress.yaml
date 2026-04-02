@@ -7,45 +7,27 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     
-    # Use the Issued Wildcard ARN
+    # SSL Configuration
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:277436022464:certificate/cb865750-0315-427d-8072-3fa705271670
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    # Health Check
+    # Low Frequency Health Check (5 Minutes)
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
-    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/success-codes: '200'
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '60'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
     
+    # Required for WebSockets (Django Channels)
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
 spec:
   ingressClassName: alb
   rules:
-    # Main Frontend
-    - host: hire-flow.online
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-service
-                port:
-                  number: 80
-    # WWW Frontend
-    - host: www.hire-flow.online
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend-service
-                port:
-                  number: 80
-    # API
+    # Consolidated API and AI rules
     - host: api.hire-flow.online
       http:
         paths:
@@ -56,7 +38,36 @@ spec:
                 name: backend-service
                 port:
                   number: 8000
-    # n8n
+          - path: /admin/
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          - path: /ws/
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          - path: /static
+            pathType: Prefix
+            backend:
+              service:
+                name: backend-service
+                port:
+                  number: 8000
+          - path: /api/ai/
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-service
+                port:
+                  number: 8002
+    
+    # n8n Automation
     - host: n8n.hire-flow.online
       http:
         paths:
@@ -67,14 +78,3 @@ spec:
                 name: n8n
                 port:
                   number: 5678
-    # AI
-    - host: ai.hire-flow.online
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: ai-service
-                port:
-                  number: 8002
