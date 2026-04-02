@@ -5,7 +5,7 @@ export const adminService = {
   getUsers: () => api.get("/admin/users/"),
   updateUser: (id, data) => api.put(`/admin/users/${id}/`, data),
   
-  // Companies
+  
   getCompanies: () => api.get("/admin/companies/"),
   
   // Profiles

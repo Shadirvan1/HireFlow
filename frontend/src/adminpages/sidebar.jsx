@@ -41,18 +41,7 @@ export default function Sidebar() {
             HR Details
           </NavLink>
 
-          <NavLink
-            to="/admin/users"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-lg transition ${
-                isActive
-                  ? "bg-slate-700 text-white"
-                  : "text-gray-300 hover:bg-slate-800 hover:text-white"
-              }`
-            }
-          >
-            Users
-          </NavLink>
+        
 
           <NavLink
             to="/admin/settings"
@@ -84,8 +73,7 @@ export default function Sidebar() {
 
       </div>
 
-      {/* Content Area */}
-      
+    
     </div>
   );
 }
