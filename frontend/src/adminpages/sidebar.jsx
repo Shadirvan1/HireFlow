@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/userReducer";
-import api from "../../api/api";
+import api from "../api/api";
 import { disconnectSocket } from "../api/socket";
 import { 
   LayoutDashboard, 
