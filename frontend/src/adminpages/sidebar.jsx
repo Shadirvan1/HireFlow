@@ -85,9 +85,7 @@ export default function Sidebar() {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 p-8">
-        <Outlet />
-      </div>
+      
     </div>
   );
 }

@@ -14,7 +14,7 @@ const AdminDashboard = () => {
       else if (tab === 'hrs') response = await adminService.getHRProfiles();
       else if (tab === 'candidates') response = await adminService.getCandidateProfiles();
       
-      setData(response.data || response); // Adjust based on your API utility return structure
+      setData(response.data || response);
     } catch (error) {
       console.error("Fetch error:", error);
     } finally {
