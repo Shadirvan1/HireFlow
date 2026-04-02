@@ -2,13 +2,13 @@ import api from "../api/api";
 
 export const adminService = {
   // Users
-  getUsers: () => api.get("/admin/users/"),
-  updateUser: (id, data) => api.put(`/admin/users/${id}/`, data),
+  getUsers: () => api.get("/admin/users/users/users/"),
+  updateUser: (id, data) => api.put(`/admin/users/users/${id}/`, data),
   
   
-  getCompanies: () => api.get("/admin/companies/"),
+  getCompanies: () => api.get("/admin/users/companies/"),
   
   // Profiles
-  getHRProfiles: () => api.get("/admin/hr-profiles/"),
-  getCandidateProfiles: () => api.get("/admin/candidate-profiles/"),
+  getHRProfiles: () => api.get("/admin/users/hr-profiles/"),
+  getCandidateProfiles: () => api.get("/admin/users/candidate-profiles/"),
 };
