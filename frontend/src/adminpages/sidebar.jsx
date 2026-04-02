@@ -3,7 +3,8 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { 
   LayoutDashboard, 
   UserCheck ,
-  ChevronLeft
+  ChevronLeft,
+  LogOut
 } from "lucide-react";
 
 export default function Sidebar() {
