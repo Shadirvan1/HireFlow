@@ -1,5 +1,9 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { logout } from "../redux/userReducer";
+import api from "../../api/api";
+import { disconnectSocket } from "../api/socket";
 import { 
   LayoutDashboard, 
   UserCheck ,
@@ -11,16 +15,23 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
+  const dispatch = useDispatch()
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, path: "/admin/dashboard" },
     { name: "HR Details", icon: UserCheck, path: "/admin/hr/details" },
   ];
 
-  const handleLogout = () => {
-    localStorage.clear();
-    // Use navigate for a smoother SPA feel or window.location for a hard reset
-    window.location.href = "/login";
+  const handleLogout = async () => {
+    try {
+      disconnectSocket();
+      await api.post("accounts/logout/");
+    } catch (e) {
+      console.error("Backend logout failed");
+    } finally {
+      localStorage.clear();
+      dispatch(logout());
+      navigate("/login");
+    }
   };
 
   return (
