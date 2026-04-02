@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminService } from '../api/adminService';
+import { adminService } from './adminservice';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('users');
