@@ -2,7 +2,7 @@ import api from "../api/api";
 
 export const adminService = {
   // Users
-  getUsers: () => api.get("/admin/users/users/users/"),
+  getUsers: () => api.get("/admin/users/users/"),
   updateUser: (id, data) => api.put(`/admin/users/users/${id}/`, data),
   
   
