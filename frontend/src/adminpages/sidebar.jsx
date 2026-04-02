@@ -43,18 +43,7 @@ export default function Sidebar() {
 
         
 
-          <NavLink
-            to="/admin/settings"
-            className={({ isActive }) =>
-              `block px-4 py-2 rounded-lg transition ${
-                isActive
-                  ? "bg-slate-700 text-white"
-                  : "text-gray-300 hover:bg-slate-800 hover:text-white"
-              }`
-            }
-          >
-            Settings
-          </NavLink>
+        
 
         </nav>
 
