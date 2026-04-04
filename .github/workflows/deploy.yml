@@ -56,7 +56,7 @@ jobs:
 
       - name: Update EKS Cluster
         run: |
-          aws eks update-kubeconfig --name hireflow-cluster --region ap-south-1
+          aws eks update-kubeconfig --name hire-flow --region ap-south-1
           kubectl rollout restart deployment/backend-deployment
           kubectl rollout restart deployment/ai-service-deployment
           kubectl apply -f k8s/config.yaml
