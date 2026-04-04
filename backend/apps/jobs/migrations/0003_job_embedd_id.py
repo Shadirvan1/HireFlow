@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0002_job_is_approve'),
+        ("jobs", "0002_job_is_approve"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='job',
-            name='embedd_id',
+            model_name="job",
+            name="embedd_id",
             field=models.CharField(blank=True, null=True),
         ),
     ]

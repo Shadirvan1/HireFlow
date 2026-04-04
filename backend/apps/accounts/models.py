@@ -1,13 +1,17 @@
+import datetime
 import os
 import uuid
+
 import pyotp
-import datetime
+from cloudinary_storage.storage import MediaCloudinaryStorage
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
 
-
-from cloudinary_storage.storage import MediaCloudinaryStorage
 from utils.cloudinary_storage import PublicRawMediaCloudinaryStorage
 
 
@@ -32,15 +36,18 @@ def company_logo_upload(instance, filename):
     ext = os.path.splitext(filename)[1]
     return f"company/logos/{uuid.uuid4()}{ext}"
 
+
 def hr_profile_image_upload(instance, filename):
     ext = os.path.splitext(filename)[1]
     user_id = instance.user.id if instance.user else "unknown"
     return f"hr_profiles/user_{user_id}/{uuid.uuid4()}{ext}"
 
+
 def hr_certification_upload(instance, filename):
     ext = os.path.splitext(filename)[1]
     user_id = instance.user.id if instance.user else "unknown"
     return f"hr_certifications/user_{user_id}/{uuid.uuid4()}{ext}"
+
 
 def candidate_profile_image_upload(instance, filename):
     ext = os.path.splitext(filename)[1]
@@ -99,9 +106,9 @@ class Company(models.Model):
 
     logo = models.ImageField(
         upload_to=company_logo_upload,
-        storage=MediaCloudinaryStorage(),  
+        storage=MediaCloudinaryStorage(),
         null=True,
-        blank=True
+        blank=True,
     )
 
     description = models.TextField(blank=True)
@@ -112,29 +119,36 @@ class Company(models.Model):
 
 
 class HRProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="hr_profile", blank=True, null=True)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="hr_members", blank=True, null=True)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="hr_profile", blank=True, null=True
+    )
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="hr_members",
+        blank=True,
+        null=True,
+    )
 
     linkedin_url = models.URLField(blank=True, null=True)
     designation = models.CharField(max_length=100, blank=True, null=True)
     department = models.CharField(max_length=50, blank=True, null=True)
 
-    ROLE_CHOICES = [('INTERVIEWER', 'INTERVIEWER'), ('HR', 'HR')]
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='HR')
+    ROLE_CHOICES = [("INTERVIEWER", "INTERVIEWER"), ("HR", "HR")]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="HR")
 
     profile_image = models.ImageField(
         upload_to=hr_profile_image_upload,
-        storage=MediaCloudinaryStorage(), 
+        storage=MediaCloudinaryStorage(),
         blank=True,
-        null=True
+        null=True,
     )
 
-    
     certifications = models.FileField(
         upload_to=hr_certification_upload,
-        storage=PublicRawMediaCloudinaryStorage(), 
+        storage=PublicRawMediaCloudinaryStorage(),
         blank=True,
-        null=True
+        null=True,
     )
 
     is_active = models.BooleanField(default=True)
@@ -150,7 +164,9 @@ class HRProfile(models.Model):
 
 
 class CandidateProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="candidate_profile")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="candidate_profile"
+    )
 
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
@@ -160,16 +176,20 @@ class CandidateProfile(models.Model):
     total_experience = models.FloatField(default=0.0)
 
     current_company = models.CharField(max_length=255, blank=True, null=True)
-    current_ctc = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    expected_ctc = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    current_ctc = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    expected_ctc = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
 
     notice_period_days = models.IntegerField(default=0)
 
     profile_image = models.ImageField(
         upload_to=candidate_profile_image_upload,
-        storage=MediaCloudinaryStorage(),  
+        storage=MediaCloudinaryStorage(),
         blank=True,
-        null=True
+        null=True,
     )
 
     is_active = models.BooleanField(default=True)
@@ -184,7 +204,8 @@ class CandidateProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - Candidate"
-    
+
+
 class PhoneOTP(models.Model):
     phone_number = models.CharField(max_length=15)
     otp = models.CharField(max_length=6)

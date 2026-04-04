@@ -1,6 +1,7 @@
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+
 
 def create_tokens_for_user(user):
     """
@@ -8,17 +9,15 @@ def create_tokens_for_user(user):
     Returns a dictionary with access and refresh tokens.
     """
     refresh = RefreshToken.for_user(user)
-    return {
-        "access": str(refresh.access_token),
-        "refresh": str(refresh)
-    }
+    return {"access": str(refresh.access_token), "refresh": str(refresh)}
+
 
 def refresh_tokens(refresh_token_str):
-    serializer = TokenRefreshSerializer(
-        data={"refresh": refresh_token_str}
-    )
+    serializer = TokenRefreshSerializer(data={"refresh": refresh_token_str})
     serializer.is_valid(raise_exception=True)
     return serializer.validated_data
+
+
 def set_tokens_in_response(response, tokens):
     """
     Set access and refresh tokens in HttpOnly cookies.
@@ -27,17 +26,18 @@ def set_tokens_in_response(response, tokens):
         key="access_token",
         value=tokens["access"],
         httponly=True,
-        secure=True,         
-       samesite="Lax"
+        secure=True,
+        samesite="Lax",
     )
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh"],
         httponly=True,
         secure=True,
-        samesite="Lax"
+        samesite="Lax",
     )
     return response
+
 
 def blacklist_refresh_token(refresh_token_str):
     """

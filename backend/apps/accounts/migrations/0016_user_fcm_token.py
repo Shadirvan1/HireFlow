@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0015_phoneotp'),
+        ("accounts", "0015_phoneotp"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='fcm_token',
+            model_name="user",
+            name="fcm_token",
             field=models.TextField(blank=True, null=True),
         ),
     ]

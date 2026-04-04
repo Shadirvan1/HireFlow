@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0004_alter_jobapplication_resume'),
+        ("jobs", "0004_alter_jobapplication_resume"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='job',
-            name='ats_ascore',
+            model_name="job",
+            name="ats_ascore",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='job',
-            name='is_automatic',
+            model_name="job",
+            name="is_automatic",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='job',
-            name='is_interviewer',
+            model_name="job",
+            name="is_interviewer",
             field=models.EmailField(blank=True, max_length=254, null=True),
         ),
     ]

@@ -8,28 +8,33 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0006_alter_job_requirements'),
+        ("jobs", "0006_alter_job_requirements"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='job',
-            name='is_interviewer',
+            model_name="job",
+            name="is_interviewer",
         ),
         migrations.AddField(
-            model_name='jobapplication',
-            name='interviewer',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL),
+            model_name="jobapplication",
+            name="interviewer",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='jobapplication',
-            name='meeting_link',
+            model_name="jobapplication",
+            name="meeting_link",
             field=models.URLField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='jobapplication',
-            name='scheduled_at',
+            model_name="jobapplication",
+            name="scheduled_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
     ]

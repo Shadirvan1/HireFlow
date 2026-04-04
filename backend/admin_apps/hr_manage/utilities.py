@@ -1,9 +1,8 @@
-from apps.accounts.models import User 
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
-from celery import shared_task
 
-
+from apps.accounts.models import User
 
 
 @shared_task
@@ -70,8 +69,6 @@ def send_hr_approval_email(user):
 
         email.attach_alternative(html_content, "text/html")
         email.send()
-
-        
 
     except Exception as e:
         print(f"Failed to send approval email to {user.email}: {str(e)}")

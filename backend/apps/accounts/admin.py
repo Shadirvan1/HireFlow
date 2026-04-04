@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import HRProfile, CandidateProfile, User, Company,Invite
+
+from .models import CandidateProfile, Company, HRProfile, Invite, User
 
 # Register your models
 admin.site.register(HRProfile)

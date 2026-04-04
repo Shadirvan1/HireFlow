@@ -1,60 +1,82 @@
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from django.contrib.auth import get_user_model
-from apps.accounts.models import HRProfile, Company, Notification
+
+from apps.accounts.models import Company, HRProfile, Notification
 
 User = get_user_model()
+
 
 class HireFlowAPITests(APITestCase):
     def setUp(self):
 
         self.company = Company.objects.create(name="TechCorp")
-        
-        self.hr_user = User.objects.create_user(username="hr_user", password="password123", email="hr@tech.com")
-        self.hr_profile = HRProfile.objects.create(user=self.hr_user, company=self.company, role="HR")
-        
-        self.emp_user = User.objects.create_user(username="emp_user", password="password123")
-        self.emp_profile = HRProfile.objects.create(user=self.emp_user, company=self.company, role="INTERVIEWER")
+
+        self.hr_user = User.objects.create_user(
+            username="hr_user", password="password123", email="hr@tech.com"
+        )
+        self.hr_profile = HRProfile.objects.create(
+            user=self.hr_user, company=self.company, role="HR"
+        )
+
+        self.emp_user = User.objects.create_user(
+            username="emp_user", password="password123"
+        )
+        self.emp_profile = HRProfile.objects.create(
+            user=self.emp_user, company=self.company, role="INTERVIEWER"
+        )
 
         self.version = "v1"
         self.client.force_authenticate(user=self.hr_user)
 
     def test_get_all_employees_success(self):
-        url = reverse('all-employees', kwargs={'version': self.version})
-        
+        url = reverse("all-employees", kwargs={"version": self.version})
+
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
 
     def test_toggle_employee_role_success(self):
-        url = reverse('toggle-role', kwargs={'version': self.version, 'id': self.emp_profile.id})
+        url = reverse(
+            "toggle-role", kwargs={"version": self.version, "id": self.emp_profile.id}
+        )
         data = {"role": "HR"}
-        
-        response = self.client.patch(url, data, format='json')
-        
+
+        response = self.client.patch(url, data, format="json")
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.emp_profile.refresh_from_db()
         self.assertEqual(self.emp_profile.role, "HR")
 
     def test_toggle_role_unauthorized_company(self):
         other_comp = Company.objects.create(name="OtherCorp")
-        other_user = User.objects.create_user(username="other_gui", password="password123")
-        other_profile = HRProfile.objects.create(user=other_user, company=other_comp, role="INTERVIEWER")
-        
-        url = reverse('toggle-role', kwargs={'version': self.version, 'id': other_profile.id})
-        response = self.client.patch(url, {"role": "HR"}, format='json')
-        
+        other_user = User.objects.create_user(
+            username="other_gui", password="password123"
+        )
+        other_profile = HRProfile.objects.create(
+            user=other_user, company=other_comp, role="INTERVIEWER"
+        )
+
+        url = reverse(
+            "toggle-role", kwargs={"version": self.version, "id": other_profile.id}
+        )
+        response = self.client.patch(url, {"role": "HR"}, format="json")
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['error'], "This employee does not belong to your company")
+        self.assertEqual(
+            response.data["error"], "This employee does not belong to your company"
+        )
 
     def test_notification_mark_as_read(self):
         notif = Notification.objects.create(user=self.hr_user, message="Hello")
-        url = reverse('notification-detail', kwargs={'version': self.version, 'pk': notif.pk})
-        
+        url = reverse(
+            "notification-detail", kwargs={"version": self.version, "pk": notif.pk}
+        )
+
         response = self.client.patch(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         notif.refresh_from_db()
         self.assertTrue(notif.is_read)

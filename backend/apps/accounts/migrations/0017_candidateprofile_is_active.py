@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0016_user_fcm_token'),
+        ("accounts", "0016_user_fcm_token"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='candidateprofile',
-            name='is_active',
+            model_name="candidateprofile",
+            name="is_active",
             field=models.BooleanField(default=True),
         ),
     ]

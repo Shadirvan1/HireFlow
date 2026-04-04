@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0010_alter_user_hr_password'),
+        ("accounts", "0010_alter_user_hr_password"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='is_hr',
+            model_name="user",
+            name="is_hr",
             field=models.BooleanField(default=False),
         ),
     ]

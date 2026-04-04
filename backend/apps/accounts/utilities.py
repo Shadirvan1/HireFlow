@@ -1,19 +1,21 @@
-from celery import shared_task
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.core.mail import EmailMultiAlternatives
-from django.conf import settings
-import random
-from django.core.cache import cache
 import os
+import random
+
+from celery import shared_task
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.core.cache import cache
+from django.core.mail import EmailMultiAlternatives
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 
 User = get_user_model()
 
 url = os.getenv("FRONT_END_URL_VERIFY")
 
 FRONT_END_URL_VERIFY = os.getenv("FRONT_END_URL_VERIFY")
+
 
 @shared_task
 def send_verification_email(user_id):
@@ -23,13 +25,13 @@ def send_verification_email(user_id):
     try:
         # Fetch the user inside the task
         user = User.objects.get(pk=user_id)
-        
+
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
         verification_link = f"{FRONT_END_URL_VERIFY}/{uid}/{token}/"
 
         subject = "Verify Your HireFlow Account"
-        
+
         html_content = f"""
         <html>
         <body style="font-family: Arial, sans-serif; background-color: #f4f6f8; padding: 20px;">
@@ -59,7 +61,9 @@ def send_verification_email(user_id):
         </html>
         """
 
-        text_content = f"Hi {user.username},\n\nVerify your email here: {verification_link}"
+        text_content = (
+            f"Hi {user.username},\n\nVerify your email here: {verification_link}"
+        )
 
         email = EmailMultiAlternatives(
             subject=subject,
@@ -69,7 +73,7 @@ def send_verification_email(user_id):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
-        
+
         return f"Verification email sent to {user.email}"
 
     except User.DoesNotExist:
@@ -202,9 +206,6 @@ HireFlow Team
         raise
 
 
-
-
-
 @shared_task
 def send_delete_account_otp(user_id, username, email):
     """
@@ -216,7 +217,7 @@ def send_delete_account_otp(user_id, username, email):
 
         # Store in Redis with 5 minute expiry
         cache_key = f"delete_account_otp_{user_id}"
-        cache.set(cache_key, otp, timeout=300)  
+        cache.set(cache_key, otp, timeout=300)
 
         subject = "HireFlow Account Deletion OTP"
 

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0005_job_ats_ascore_job_is_automatic_job_is_interviewer'),
+        ("jobs", "0005_job_ats_ascore_job_is_automatic_job_is_interviewer"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='job',
-            name='requirements',
+            model_name="job",
+            name="requirements",
             field=models.TextField(blank=True, null=True),
         ),
     ]

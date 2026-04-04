@@ -6,23 +6,32 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0008_remove_company_phone_number_remove_user_phone_and_more'),
+        ("accounts", "0008_remove_company_phone_number_remove_user_phone_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='mfa_enabled',
+            model_name="user",
+            name="mfa_enabled",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='user',
-            name='mfa_secret',
+            model_name="user",
+            name="mfa_secret",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='role',
-            field=models.CharField(choices=[('CANDIDATE', 'Candidate'), ('INTERVIEWER', 'Interviewer'), ('ADMIN', 'Admin'), ('HR', 'HR')], default='CANDIDATE', max_length=20),
+            model_name="user",
+            name="role",
+            field=models.CharField(
+                choices=[
+                    ("CANDIDATE", "Candidate"),
+                    ("INTERVIEWER", "Interviewer"),
+                    ("ADMIN", "Admin"),
+                    ("HR", "HR"),
+                ],
+                default="CANDIDATE",
+                max_length=20,
+            ),
         ),
     ]

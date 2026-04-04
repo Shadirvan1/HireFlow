@@ -1,25 +1,23 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.utils import timezone
-from apps.accounts.models import Company, HRProfile, CandidateProfile
 import datetime
-from django.urls import reverse
-from rest_framework.test import APITestCase
-from rest_framework import status
+
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.test import APITestCase
 
-
+from apps.accounts.models import CandidateProfile, Company, HRProfile
 
 User = get_user_model()
+
 
 class HireFlowUserTests(TestCase):
 
     def test_create_user(self):
         """Test creating a user with email and username"""
         user = User.objects.create_user(
-            email="test@hireflow.com",
-            username="testuser",
-            password="password123"
+            email="test@hireflow.com", username="testuser", password="password123"
         )
         self.assertEqual(user.email, "test@hireflow.com")
         self.assertEqual(user.username, "testuser")
@@ -29,9 +27,7 @@ class HireFlowUserTests(TestCase):
     def test_create_superuser(self):
         """Test creating a superuser"""
         admin = User.objects.create_superuser(
-            email="admin@hireflow.com",
-            username="adminuser",
-            password="password123"
+            email="admin@hireflow.com", username="adminuser", password="password123"
         )
         self.assertTrue(admin.is_staff)
         self.assertTrue(admin.is_superuser)
@@ -43,6 +39,7 @@ class HireFlowUserTests(TestCase):
         user = User.objects.create_user(email, "password123", username="norm")
         self.assertEqual(user.email, "TEST@hireflow.com")
 
+
 class CompanyAndProfileTests(TestCase):
 
     def setUp(self):
@@ -51,13 +48,13 @@ class CompanyAndProfileTests(TestCase):
             name="HireFlow Tech",
             industry="HR Tech",
             company_size="11-50",
-            headquarters="India"
+            headquarters="India",
         )
         self.user = User.objects.create_user(
             email="hr@company.com",
             username="hr_manager",
             password="password123",
-            role="HR"
+            role="HR",
         )
 
     def test_company_creation(self):
@@ -71,7 +68,7 @@ class CompanyAndProfileTests(TestCase):
             user=self.user,
             company=self.company,
             designation="Senior Recruiter",
-            experience_years=5
+            experience_years=5,
         )
         self.assertEqual(hr_profile.user.email, "hr@company.com")
         self.assertEqual(hr_profile.company.name, "HireFlow Tech")
@@ -82,28 +79,30 @@ class CompanyAndProfileTests(TestCase):
         candidate_user = User.objects.create_user(
             email="candidate@hireflow.com",
             username="dev_candidate",
-            password="password123"
+            password="password123",
         )
         profile = CandidateProfile.objects.create(
             user=candidate_user,
             first_name="John",
             last_name="Doe",
             current_location="Bangalore",
-            total_experience=3.5
+            total_experience=3.5,
         )
         self.assertEqual(profile.user.email, "candidate@hireflow.com")
         self.assertEqual(str(profile), "candidate@hireflow.com - Candidate")
+
 
 class UtilityModelTests(TestCase):
 
     def test_otp_expiry_logic(self):
         """Test the is_valid method of PhoneOTP"""
         from apps.accounts.models import PhoneOTP
+
         otp_entry = PhoneOTP.objects.create(phone_number="1234567890", otp="123456")
-        
+
         # Should be valid right after creation
         self.assertTrue(otp_entry.is_valid())
-        
+
         # Manually backdate the created_at to test expiry
         otp_entry.created_at = timezone.now() - datetime.timedelta(minutes=10)
         otp_entry.save()
@@ -117,7 +116,7 @@ class BaseTestCase(APITestCase):
             email="test@example.com",
             password="Test@123",
             is_verified=True,
-            is_active=True
+            is_active=True,
         )
 
 
@@ -126,40 +125,33 @@ class TestRegister(BaseTestCase):
     def test_register_success(self):
         url = "/api/v1/accounts/register/"
 
-        data = {
-            "email": "new@example.com",
-            "password": "Test@123"
-        }
+        data = {"email": "new@example.com", "password": "Test@123"}
 
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("user", response.data)
-    
+
+
 class TestRegister(BaseTestCase):
 
     def test_register_success(self):
         url = "/api/v1/accounts/register/"
 
-        data = {
-            "email": "new@example.com",
-            "password": "Test@123"
-        }
+        data = {"email": "new@example.com", "password": "Test@123"}
 
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("user", response.data)
+
 
 class TestLogin(BaseTestCase):
 
     def test_login_success(self):
         url = "/api/v1/accounts/login/"
 
-        data = {
-            "email": "test@example.com",
-            "password": "Test@123"
-        }
+        data = {"email": "test@example.com", "password": "Test@123"}
 
         response = self.client.post(url, data)
 
@@ -169,10 +161,7 @@ class TestLogin(BaseTestCase):
     def test_login_wrong_password(self):
         url = "/api/v1/accounts/login/"
 
-        data = {
-            "email": "test@example.com",
-            "password": "wrong"
-        }
+        data = {"email": "test@example.com", "password": "wrong"}
 
         response = self.client.post(url, data)
 
@@ -198,6 +187,7 @@ class TestResendEmail(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
 class TestMeView(BaseTestCase):
 
     def test_me(self):
@@ -209,6 +199,7 @@ class TestMeView(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["user_id"], self.user.id)
 
+
 class TestMFA(BaseTestCase):
 
     def test_get_mfa_setup(self):
@@ -219,7 +210,8 @@ class TestMFA(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("otp_uri", response.data)
-    
+
+
 class TestRefreshToken(BaseTestCase):
 
     def test_refresh_without_cookie(self):
@@ -228,7 +220,9 @@ class TestRefreshToken(BaseTestCase):
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
 from unittest.mock import patch
+
 
 class TestGoogleAuth(BaseTestCase):
 
@@ -237,7 +231,7 @@ class TestGoogleAuth(BaseTestCase):
         mock_verify.return_value = {
             "email": "google@test.com",
             "given_name": "Test",
-            "family_name": "User"
+            "family_name": "User",
         }
 
         url = "/api/v1/accounts/google/"

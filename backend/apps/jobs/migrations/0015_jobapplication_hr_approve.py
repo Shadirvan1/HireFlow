@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0014_jobapplication_ai_reasoning_and_more'),
+        ("jobs", "0014_jobapplication_ai_reasoning_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='jobapplication',
-            name='hr_approve',
+            model_name="jobapplication",
+            name="hr_approve",
             field=models.BooleanField(default=False),
         ),
     ]

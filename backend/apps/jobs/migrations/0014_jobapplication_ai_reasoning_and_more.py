@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0013_jobapplication_reason_jobapplication_score_and_more'),
+        ("jobs", "0013_jobapplication_reason_jobapplication_score_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='jobapplication',
-            name='ai_reasoning',
+            model_name="jobapplication",
+            name="ai_reasoning",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='jobapplication',
-            name='score_analysis',
+            model_name="jobapplication",
+            name="score_analysis",
             field=models.TextField(blank=True, null=True),
         ),
     ]

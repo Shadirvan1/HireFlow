@@ -16,8 +16,9 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 from dotenv import load_dotenv
 import os
+
 load_dotenv(BASE_DIR / ".env")
-FASTAPI_URL = os.getenv('FASTAPI_URL')
+FASTAPI_URL = os.getenv("FASTAPI_URL")
 
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -27,13 +28,13 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 
 
 # ALLOWED_HOSTS = [
-#     'api.hire-flow.online',     
-#     'www.hire-flow.online', 
-#     'hire-flow.online', 
-#     'localhost', 
+#     'api.hire-flow.online',
+#     'www.hire-flow.online',
+#     'hire-flow.online',
+#     'localhost',
 #     '127.0.0.1',
 #     '.svc.cluster.local',
-#     '192.168.0.0/16', 
+#     '192.168.0.0/16',
 #     '10.0.0.0/8',
 #     '172.16.0.0/12',
 
@@ -43,25 +44,25 @@ ALLOWED_HOSTS = ["*"]
 CORS_ALLOWED_ORIGINS = [
     "https://www.hire-flow.online",
     "https://hire-flow.online",
-    "http://localhost:5173",  
+    "http://localhost:5173",
 ]
 
 
 # CSRF is also strict with HTTPS
 CSRF_TRUSTED_ORIGINS = [
-    'https://www.hire-flow.online',
-    'https://hire-flow.online',
-    "http://localhost:5173"
+    "https://www.hire-flow.online",
+    "https://hire-flow.online",
+    "http://localhost:5173",
 ]
 
-APPEND_SLASH = False  
+APPEND_SLASH = False
 
-SECURE_SSL_REDIRECT = False  
-USE_X_FORWARDED_HOST = True   
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-SESSION_COOKIE_SECURE = True  
-CSRF_COOKIE_SECURE = True      
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 SESSION_COOKIE_SAMESITE = "None"
 CSRF_COOKIE_SAMESITE = "None"
@@ -75,13 +76,13 @@ CORS_ALLOW_CREDENTIALS = True
 INSTALLED_APPS = [
     "daphne",
     "channels",
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'cloudinary',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "cloudinary",
     "apps.accounts",
     "apps.jobs",
     "apps.management",
@@ -91,35 +92,33 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "storages",
-    'django_celery_beat',
-    'apps.live_chat',
-
-
+    "django_celery_beat",
+    "apps.live_chat",
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
 
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLINT_ID')
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLINT_ID")
 
 REST_FRAMEWORK = {
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'apps.accounts.authentication.CookieJWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "apps.accounts.authentication.CookieJWTAuthentication",
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 10,
 }
 STORAGES = {
     "default": {
@@ -144,7 +143,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     "daily-job-alerts-evening": {
         "task": "apps.jobs.tasks.send_daily_job_notifications",
-        "schedule": crontab(hour=18, minute=30), 
+        "schedule": crontab(hour=18, minute=30),
     },
 }
 
@@ -152,7 +151,6 @@ import ssl
 
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = 6379
-
 
 
 PROTOCOL = "rediss"
@@ -164,30 +162,27 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [{
-                "address": f"rediss://{REDIS_HOST}:{REDIS_PORT}/0",
-                "ssl_context": secure_context, 
-            }],
+            "hosts": [
+                {
+                    "address": f"rediss://{REDIS_HOST}:{REDIS_PORT}/0",
+                    "ssl_context": secure_context,
+                }
+            ],
         },
     },
 }
 
-CELERY_BROKER_USE_SSL = {
-    'ssl_cert_reqs': ssl.CERT_REQUIRED 
-}
-CELERY_REDIS_BACKEND_USE_SSL = {
-    'ssl_cert_reqs': ssl.CERT_REQUIRED
-}
+CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_REQUIRED}
+CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_REQUIRED}
 
 CELERY_BROKER_URL = f"rediss://{REDIS_HOST}:{REDIS_PORT}/0"
 
 
-
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-    'STATICFILES_MANIFEST_ROOT': None,
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
+    "STATICFILES_MANIFEST_ROOT": None,
 }
 
 
@@ -196,16 +191,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
 }
-CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': None}
-CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': None}
+CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": None}
+CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": None}
 
-ACCESS_COOKIE_NAME = "access_token"  
+ACCESS_COOKIE_NAME = "access_token"
 
 
 REFRESH_COOKIE_NAME = "refresh_token"
@@ -221,13 +215,12 @@ SPECTACULAR_SETTINGS = {
 AUTH_USER_MODEL = "accounts.User"
 
 
-
-ROOT_URLCONF = 'hireflow_main.urls'
+ROOT_URLCONF = "hireflow_main.urls"
 
 
 # settings.py
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp-relay.brevo.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
@@ -236,20 +229,20 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'hireflow_main.wsgi.application'
+WSGI_APPLICATION = "hireflow_main.wsgi.application"
 
 
 # Database
@@ -257,12 +250,11 @@ WSGI_APPLICATION = 'hireflow_main.wsgi.application'
 
 DATABASES = {
     "default": {
-        
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("DB_NAME"),
         "USER": os.getenv("DB_USER"),
         "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST","localhost"),
+        "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT"),
     }
 }
@@ -272,16 +264,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -289,9 +281,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'Asia/Kolkata'
+TIME_ZONE = "Asia/Kolkata"
 CELERY_ENABLE_UTC = True
 
 USE_I18N = True
@@ -307,4 +299,4 @@ USE_TZ = True
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # 3. The URL prefix
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0003_company_remove_hrprofile_company_name_and_more'),
+        ("accounts", "0003_company_remove_hrprofile_company_name_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='user',
-            name='verify_link',
+            model_name="user",
+            name="verify_link",
             field=models.CharField(blank=True, max_length=256, null=True),
         ),
     ]

@@ -1,15 +1,18 @@
 from celery import shared_task
 from django.core.mail import EmailMultiAlternatives
+
 from apps.accounts.models import CandidateProfile
+
 from .models import Job
 
 
 @shared_task
 def send_daily_job_notifications():
 
-
-    jobs = Job.objects.filter(is_approve=True,is_active=True).order_by('-id')[:5]
-    for candidate in CandidateProfile.objects.filter(is_active=True,)[:20]:
+    jobs = Job.objects.filter(is_approve=True, is_active=True).order_by("-id")[:5]
+    for candidate in CandidateProfile.objects.filter(
+        is_active=True,
+    )[:20]:
 
         job_rows = ""
         for job in jobs:
@@ -93,10 +96,12 @@ def send_hiring_email(application_id):
     """
     Sends a congratulatory email to a hired candidate.
     """
-    from .models import JobApplication # Local import to avoid circular dependency
-    
+    from .models import JobApplication  # Local import to avoid circular dependency
+
     try:
-        app = JobApplication.objects.select_related('applicant__user', 'job__company').get(id=application_id)
+        app = JobApplication.objects.select_related(
+            "applicant__user", "job__company"
+        ).get(id=application_id)
         user = app.applicant.user
         job_name = app.job.title
         company_name = app.job.company.name
@@ -152,7 +157,6 @@ def send_hiring_email(application_id):
         print(f"Failed to send hiring email: {str(e)}")
 
 
-
 @shared_task
 def send_rejection_email(application_id):
     """
@@ -161,7 +165,9 @@ def send_rejection_email(application_id):
     from .models import JobApplication
 
     try:
-        app = JobApplication.objects.select_related('applicant__user', 'job__company').get(id=application_id)
+        app = JobApplication.objects.select_related(
+            "applicant__user", "job__company"
+        ).get(id=application_id)
         user = app.applicant.user
         job_name = app.job.title
         company_name = app.job.company.name

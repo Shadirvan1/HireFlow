@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0012_alter_hrprofile_role_invite'),
+        ("accounts", "0012_alter_hrprofile_role_invite"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='hrprofile',
-            name='is_active',
+            model_name="hrprofile",
+            name="is_active",
             field=models.BooleanField(default=True),
         ),
     ]

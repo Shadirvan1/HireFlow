@@ -7,35 +7,58 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0012_alter_jobapplication_resume'),
+        ("jobs", "0012_alter_jobapplication_resume"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='jobapplication',
-            name='reason',
+            model_name="jobapplication",
+            name="reason",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='jobapplication',
-            name='score',
+            model_name="jobapplication",
+            name="score",
             field=models.FloatField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='jobapplication',
-            name='status',
-            field=models.CharField(choices=[('SCHEDULED', 'Scheduled'), ('APPLIED', 'Applied'), ('REJECTED', 'Rejected'), ('HIRED', 'Hired')], default='APPLIED', max_length=50),
+            model_name="jobapplication",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("SCHEDULED", "Scheduled"),
+                    ("APPLIED", "Applied"),
+                    ("REJECTED", "Rejected"),
+                    ("HIRED", "Hired"),
+                ],
+                default="APPLIED",
+                max_length=50,
+            ),
         ),
         migrations.CreateModel(
-            name='InterviewScore',
+            name="InterviewScore",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('communication', models.IntegerField()),
-                ('technical', models.IntegerField()),
-                ('practical', models.IntegerField()),
-                ('attitude', models.IntegerField()),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('application', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='jobs.jobapplication')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("communication", models.IntegerField()),
+                ("technical", models.IntegerField()),
+                ("practical", models.IntegerField()),
+                ("attitude", models.IntegerField()),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "application",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="jobs.jobapplication",
+                    ),
+                ),
             ],
         ),
     ]

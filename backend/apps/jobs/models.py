@@ -1,9 +1,10 @@
 import os
 import uuid
-from django.db import models
-from django.contrib.auth import get_user_model
-from apps.accounts.models import CandidateProfile, Company
 
+from django.contrib.auth import get_user_model
+from django.db import models
+
+from apps.accounts.models import CandidateProfile, Company
 from utils.cloudinary_storage import PublicRawMediaCloudinaryStorage
 
 User = get_user_model()
@@ -31,9 +32,7 @@ class Job(models.Model):
     )
 
     company = models.ForeignKey(
-        Company,
-        on_delete=models.CASCADE,
-        related_name="posted_jobs"
+        Company, on_delete=models.CASCADE, related_name="posted_jobs"
     )
 
     title = models.CharField(max_length=255)
@@ -43,8 +42,12 @@ class Job(models.Model):
     embedd_id = models.CharField(max_length=255, blank=True, null=True)
 
     location = models.CharField(max_length=255, blank=True, null=True)
-    salary_min = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    salary_max = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    salary_min = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
+    salary_max = models.DecimalField(
+        max_digits=10, decimal_places=2, blank=True, null=True
+    )
 
     job_type = models.CharField(
         max_length=50,
@@ -53,7 +56,7 @@ class Job(models.Model):
             ("PART_TIME", "Part Time"),
             ("INTERNSHIP", "Internship"),
             ("CONTRACT", "Contract"),
-        ]
+        ],
     )
 
     experience_required = models.IntegerField(default=0)
@@ -72,31 +75,21 @@ class Job(models.Model):
 
 
 class JobApplication(models.Model):
-    job = models.ForeignKey(
-        Job,
-        on_delete=models.CASCADE,
-        related_name="applications"
-    )
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="applications")
 
     interviewer = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True
+        User, on_delete=models.SET_NULL, null=True, blank=True
     )
 
     applicant = models.ForeignKey(
-        CandidateProfile,
-        on_delete=models.CASCADE,
-        related_name="job_applications"
+        CandidateProfile, on_delete=models.CASCADE, related_name="job_applications"
     )
 
- 
     resume = models.FileField(
         upload_to=job_application_resume_upload,
         storage=PublicRawMediaCloudinaryStorage(),
         blank=True,
-        null=True
+        null=True,
     )
 
     cover_letter = models.TextField(blank=True, null=True)
@@ -109,28 +102,30 @@ class JobApplication(models.Model):
             ("REJECTED", "Rejected"),
             ("HIRED", "Hired"),
         ],
-        default="APPLIED"
+        default="APPLIED",
     )
     score = models.FloatField(null=True, blank=True)
     scheduled_at = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(null=True, blank=True)
-    interviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    interviewer = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True
+    )
     reason = models.TextField(blank=True, null=True)
     applied_at = models.DateTimeField(auto_now_add=True)
     ai_reasoning = models.TextField(blank=True, null=True)
     score_analysis = models.TextField(blank=True, null=True)
     hr_approve = models.BooleanField(default=False)
-    
 
     class Meta:
-        unique_together = ('job', 'applicant')
+        unique_together = ("job", "applicant")
 
     def __str__(self):
         return f"{self.applicant} - {self.job}"
 
+
 class InterviewScore(models.Model):
     application = models.ForeignKey(JobApplication, on_delete=models.CASCADE)
-    
+
     communication = models.IntegerField()
     technical = models.IntegerField()
     practical = models.IntegerField()
@@ -140,23 +135,17 @@ class InterviewScore(models.Model):
 
 
 class SavedJob(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="saved_jobs"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="saved_jobs")
 
     job = models.ForeignKey(
-        Job,
-        on_delete=models.CASCADE,
-        related_name="saved_by_users"
+        Job, on_delete=models.CASCADE, related_name="saved_by_users"
     )
 
     saved_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'job')
-        ordering = ['-saved_at']
+        unique_together = ("user", "job")
+        ordering = ["-saved_at"]
 
     def __str__(self):
         return f"{self.user.username} saved {self.job.title}"

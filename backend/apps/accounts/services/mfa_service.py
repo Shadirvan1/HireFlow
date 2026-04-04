@@ -1,5 +1,6 @@
 import pyotp
 
+
 def generate_mfa_secret(user):
     """
     Generates and stores a secret key for the user if not already present.
@@ -10,6 +11,7 @@ def generate_mfa_secret(user):
         user.save()
     return user.mfa_secret
 
+
 def get_provisioning_uri(user, issuer_name="HireFlow"):
     """
     Returns the OTP provisioning URI for apps like Google Authenticator.
@@ -18,6 +20,7 @@ def get_provisioning_uri(user, issuer_name="HireFlow"):
         generate_mfa_secret(user)
     totp = pyotp.TOTP(user.mfa_secret)
     return totp.provisioning_uri(name=user.email, issuer_name=issuer_name)
+
 
 def verify_otp(user, otp):
     """
@@ -29,6 +32,7 @@ def verify_otp(user, otp):
     totp = pyotp.TOTP(user.mfa_secret)
     return totp.verify(otp)
 
+
 def enable_mfa(user, otp):
     """
     Enables MFA after verifying the OTP.
@@ -38,6 +42,7 @@ def enable_mfa(user, otp):
         user.save()
         return True
     return False
+
 
 def disable_mfa(user, otp):
     """

@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0007_remove_job_is_interviewer_jobapplication_interviewer_and_more'),
+        ("jobs", "0007_remove_job_is_interviewer_jobapplication_interviewer_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='jobapplication',
-            name='status',
-            field=models.CharField(choices=[('SCHEDULED', 'Scheduled'), ('APPLIED', 'Applied'), ('SHORTLISTED', 'Shortlisted'), ('REJECTED', 'Rejected'), ('HIRED', 'Hired')], default='APPLIED', max_length=50),
+            model_name="jobapplication",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("SCHEDULED", "Scheduled"),
+                    ("APPLIED", "Applied"),
+                    ("SHORTLISTED", "Shortlisted"),
+                    ("REJECTED", "Rejected"),
+                    ("HIRED", "Hired"),
+                ],
+                default="APPLIED",
+                max_length=50,
+            ),
         ),
     ]

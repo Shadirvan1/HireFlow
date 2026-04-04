@@ -1,0 +1,57 @@
+name: HireFlow Auto-Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+     
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          python manage.py test 
+
+      # --- CONTINUE WITH DEPLOYMENT ---
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ backend-secrets.AWS_ACCESS_KEY_NOTIFICATION_ID }}
+          aws-secret-access-key: ${{ backend-secrets.AWS_SECRET_ACCESS_NOTIFICATION_KEY }}
+          aws-region: ap-south-1
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build & Push Backend
+        run: |
+          docker build -t 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest ./backend
+          docker push 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
+
+      - name: Build & Push AI Service
+        run: |
+          docker build -t 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-ai-service:latest ./ai_service
+          docker push 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-ai-service:latest
+
+      - name: Update EKS Cluster
+        run: |
+          aws eks update-kubeconfig --name hireflow-cluster --region ap-south-1
+          kubectl rollout restart deployment/backend-deployment
+          kubectl rollout restart deployment/ai-service-deployment
+          kubectl apply -f k8s/config.yaml
