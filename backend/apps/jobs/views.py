@@ -432,7 +432,7 @@ class HiredCandidatesAPIView(APIView):
             return Response({"error": "User does not have an HR profile/company associated."}, status=404)
 
 
-        queryset = JobApplication.objects.filter(status__in=["HIRED"],job__company=user_company)
+        queryset = JobApplication.objects.filter(status__in=["HIRED"],job__company=user_company,hr_approve=True)
 
 
         serializer = FullCandidateDetailSerializer(queryset, many=True)

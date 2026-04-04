@@ -158,15 +158,7 @@ REDIS_PORT = 6379
 PROTOCOL = "rediss"
 
 
-CELERY_REDIS_BACKEND_USE_SSL = {
-    'ssl_cert_reqs': ssl.CERT_NONE
-}
-CELERY_BROKER_USE_SSL = {
-    'ssl_cert_reqs': ssl.CERT_NONE
-}
-
-CELERY_BROKER_URL = f"rediss://{REDIS_HOST}:{REDIS_PORT}/0?ssl_cert_reqs=none"
-CELERY_RESULT_BACKEND = f"rediss://{REDIS_HOST}:{REDIS_PORT}/0?ssl_cert_reqs=none"
+secure_context = ssl.create_default_context()
 
 CHANNEL_LAYERS = {
     "default": {
@@ -174,11 +166,21 @@ CHANNEL_LAYERS = {
         "CONFIG": {
             "hosts": [{
                 "address": f"rediss://{REDIS_HOST}:{REDIS_PORT}/0",
-                "ssl_context": ssl._create_unverified_context(),
+                "ssl_context": secure_context, 
             }],
         },
     },
 }
+
+CELERY_BROKER_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_REQUIRED 
+}
+CELERY_REDIS_BACKEND_USE_SSL = {
+    'ssl_cert_reqs': ssl.CERT_REQUIRED
+}
+
+CELERY_BROKER_URL = f"rediss://{REDIS_HOST}:{REDIS_PORT}/0"
+
 
 
 CLOUDINARY_STORAGE = {
