@@ -25,7 +25,7 @@ const UserRanking = () => {
     }
   };
 
-  // Helper for colors
+  
   const getScoreColor = (score) => {
     if (score >= 85) return "bg-emerald-500";
     if (score >= 70) return "bg-amber-500";

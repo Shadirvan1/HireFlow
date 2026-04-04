@@ -12,22 +12,30 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    # Low Frequency Health Check (5 Minutes)
+    # Global Health Check (For Backend)
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
+    
+    # --- AI SERVICE HEALTH CHECK ---
+    # Updated to your requested path
+    alb.ingress.kubernetes.io/healthcheck-path.ai-service: /api/ai/health/
+    alb.ingress.kubernetes.io/success-codes.ai-service: '200'
+    
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/success-codes: '200'
-    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
-    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '60'
-    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
-    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
     
-    # Required for WebSockets (Django Channels)
+    # Reducing this temporarily from 300 to 30 is highly recommended 
+    # so you don't have to wait 5 minutes to see if it works.
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
+    
+    # --- N8N HEALTH CHECK ---
+    alb.ingress.kubernetes.io/success-codes.n8n: '200-499'
+    alb.ingress.kubernetes.io/healthcheck-path.n8n: /
+    
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
 spec:
   ingressClassName: alb
   rules:
-    # Consolidated API and AI rules
     - host: api.hire-flow.online
       http:
         paths:
@@ -67,7 +75,6 @@ spec:
                 port:
                   number: 8002
     
-    # n8n Automation
     - host: n8n.hire-flow.online
       http:
         paths:

@@ -73,7 +73,7 @@ export default function ApplyJob() {
       });
       setSubmitted(true);
     } catch (err) {
-      alert(err.response?.data?.message || "Submission failed");
+      alert(err.response?.data?.message || "Already applied");
     } finally {
       setSubmitting(false);
     }

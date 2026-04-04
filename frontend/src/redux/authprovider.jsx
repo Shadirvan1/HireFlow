@@ -13,6 +13,7 @@ export default function AuthProvider({ children }) {
 
     const checkAuth = async () => {
       try {
+        
         const response = await api.get("accounts/me/");
         const user = response.data;
 

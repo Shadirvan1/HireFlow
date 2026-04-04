@@ -1,8 +1,14 @@
+# ==========================================
+# 1. AI SERVICE - FASTAPI API
+# ==========================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ai-service-deployment
 spec:
+  # Recreate strategy saves RAM by killing the old pod before starting the new one
+  strategy:
+    type: Recreate 
   replicas: 1
   selector:
     matchLabels:
@@ -16,11 +22,37 @@ spec:
       - name: fastapi
         image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-ai-service:latest
         command: ["uvicorn", "app_main.main:app", "--host", "0.0.0.0", "--port", "8002"]
+        
+        resources:
+          requests:
+            memory: "250Mi"
+            cpu: "100m"
+          limits:
+            memory: "450Mi"
+            cpu: "500m"
+
+        ports:
+        - containerPort: 8002
+
+        livenessProbe:
+          httpGet:
+            path: /api/ai/docs
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 300
+        readinessProbe:
+          httpGet:
+            path: /api/ai/docs
+            port: 8002
+          initialDelaySeconds: 15
+          periodSeconds: 300
+
         envFrom:
           - configMapRef:
               name: hireflow-config
           - secretRef:      
               name: ai-secrets 
+
 ---
 apiVersion: v1
 kind: Service
@@ -31,3 +63,43 @@ spec:
     app: ai-service
   ports:
     - port: 8002
+      targetPort: 8002
+
+---
+# ==========================================
+# 2. AI SERVICE - CELERY WORKER (BACKWARDS CALLS)
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-celery-worker
+spec:
+  strategy:
+    type: Recreate 
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-celery-worker
+  template:
+    metadata:
+      labels:
+        app: ai-celery-worker
+    spec:
+      containers:
+      - name: worker
+        image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-ai-service:latest
+        command: ["celery", "-A", "app_main.celery_app", "worker", "--loglevel=info", "--concurrency=1", "-Q", "ai_queue"]
+        
+        resources:
+          requests:
+            memory: "200Mi"
+            cpu: "50m"
+          limits:
+            memory: "400Mi"
+            cpu: "200m"
+
+        envFrom:
+          - configMapRef:
+              name: hireflow-config
+          - secretRef:      
+              name: ai-secrets

@@ -44,21 +44,6 @@ async def process_job(jd: dict):
     )
 
     trust_info = check_job_trust(jd)
-
-   
-    log_entry = {
-        "embedding_id": embedding_id,
-        "job_id": jd.get("job_id"),
-        "company_id": company_id,  
-        "timestamp": datetime.datetime.now(datetime.timezone.utc),
-        "vector_dim": len(embedding),
-        "trusted": trust_info.get("trusted", False),
-        "confidence": trust_info.get("confidence", 0),
-        "reasoning": trust_info.get("reasoning", ""),
-        "job_post": jd
-    }
-    
-
     
 
     return {

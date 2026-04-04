@@ -53,7 +53,7 @@ export default function CandidateProfile() {
     });
 
     try {
-      const res = await api.put("accounts/candidate/profile/", data, {
+      const res = await api.patch("accounts/candidate/profile/", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage("Profile updated successfully!");

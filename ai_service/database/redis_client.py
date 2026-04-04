@@ -1,13 +1,10 @@
 import os
 import redis
 
+REDIS_URL = os.getenv("REDIS_HOST")
 
-REDIS_HOST = os.getenv("REDIS_HOST")
-REDIS_PORT = os.getenv("REDIS_PORT")
-
-
-redis_client = redis.Redis(
-    host=REDIS_HOST,
-    port=REDIS_PORT,
-    decode_responses=True
+redis_client = redis.from_url(
+    REDIS_URL,
+    decode_responses=True,
+    socket_timeout=5
 )

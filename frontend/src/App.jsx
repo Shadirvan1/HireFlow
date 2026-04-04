@@ -45,6 +45,7 @@ import ChangePasswordPage from "./authentication/change-password";
 import DeleteAccount from "./hrpages/security/delete-account";
 import MfaLogin from "./authentication/login-mfa";
 import AdminOutlet from "./adminpages/outlet";
+import NotFound from "./not-found";
 
 function App() {
   const GOOGLE_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -108,7 +109,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           </Route>
 
-          
+          <Route path="*" element={<NotFound />} />
 
         </Routes>
       </Router>

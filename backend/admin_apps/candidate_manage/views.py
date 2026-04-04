@@ -88,10 +88,10 @@ class CandidateProfileDetailView(APIView):
         serializer = CandidateProfileSerializer(profile)
         return Response(serializer.data)
 
-    def put(self, request, version, pk):
+    def patch(self, request, version, pk):
         profile = get_object_or_404(CandidateProfile, pk=pk)
         serializer = CandidateProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

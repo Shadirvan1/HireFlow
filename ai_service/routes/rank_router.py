@@ -17,6 +17,7 @@ router = APIRouter()
 @router.get("/rank/{job_id}")
 def rank_candidates(job_id: str):
 
+
     cache_key = f"job_ranking:{job_id}"
 
    
@@ -87,10 +88,10 @@ def rank_candidates(job_id: str):
    
     ranked = sorted(ranked, key=lambda x: x["vector_score"], reverse=True)
 
-    top_candidates = ranked[:50]
+    top_candidates = ranked[:10]
 
    
-    final_results = top_candidates[:20]
+    final_results = top_candidates[:10]
     source = "vector_search"
 
     try:
