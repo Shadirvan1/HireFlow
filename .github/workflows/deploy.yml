@@ -3,6 +3,11 @@ name: HireFlow Auto-Deploy
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'backend/**'    
+      - 'ai_service/**'   
+      - 'K8s/**'         
+      - '.github/workflows/deploy.yml'
 
 jobs:
   # --- JOB 1: RUN TESTS ---
@@ -69,4 +74,4 @@ jobs:
           kubectl rollout restart deployment/celery-worker
           kubectl rollout restart deployment/ai-service-deployment
           kubectl rollout restart deployment/ai-celery-worker
-          kubectl apply -f k8s/config.yaml
+          kubectl apply -f K8s/config.yaml
