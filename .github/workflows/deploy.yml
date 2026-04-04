@@ -8,11 +8,10 @@ jobs:
   deploy-backend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4 # Updated to v4
 
-     
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Updated to v5
         with:
           python-version: '3.10'
 
@@ -23,6 +22,13 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Backend Tests
+        # --- ADD THIS BLOCK ---
+        env:
+          SECRET_KEY: "temporary-key-for-testing"
+          DEBUG: "True"
+          # Add these if your settings.py requires them to boot
+          REDIS_HOST: "localhost" 
+          DB_ENGINE: "django.db.backends.sqlite3"
         run: |
           cd backend
           python manage.py test 
