@@ -70,8 +70,6 @@ jobs:
           # Use your correct cluster name here
           aws eks update-kubeconfig --name hire-flow --region ap-south-1
           kubectl rollout restart deployment/backend-app
-          kubectl rollout restart deployment/celery-beat
-          kubectl rollout restart deployment/celery-worker
           kubectl rollout restart deployment/ai-service-deployment
-          kubectl rollout restart deployment/ai-celery-worker
           kubectl apply -f K8s/config.yaml
+          

@@ -6,7 +6,6 @@ kind: Deployment
 metadata:
   name: ai-service-deployment
 spec:
-  # Recreate strategy saves RAM by killing the old pod before starting the new one
   strategy:
     type: Recreate 
   replicas: 1
