@@ -19,7 +19,7 @@ const NotFound = () => {
 
         <h2 className="text-3xl font-bold text-gray-900 mb-3">Application Not Found</h2>
         <p className="text-gray-500 mb-10 max-w-sm mx-auto">
-          The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+          The page you are looking for might have been removed, had its name changed, or is temporarily unavailable .
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
