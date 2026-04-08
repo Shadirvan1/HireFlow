@@ -163,15 +163,14 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [
-                {
-                    "address": f"rediss://{REDIS_HOST}:{REDIS_PORT}/0",
-                    "ssl_context": secure_context,
-                }
+                f"rediss://{REDIS_HOST}:{REDIS_PORT}/0"   
+                
             ],
         },
     },
 }
-
+# "address": f"rediss://{REDIS_HOST}:{REDIS_PORT}/0",
+# "ssl_context": secure_context,
 CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_REQUIRED}
 CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_REQUIRED}
 

@@ -151,7 +151,6 @@ def send_hiring_email(application_id):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
-        print(f"Hiring email sent to {user.email}")
 
     except Exception as e:
         print(f"Failed to send hiring email: {str(e)}")
@@ -218,7 +217,6 @@ def send_rejection_email(application_id):
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
-        print(f"Rejection email sent to {user.email}")
 
     except Exception as e:
         print(f"Failed to send rejection email: {str(e)}")

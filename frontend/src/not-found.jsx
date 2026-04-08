@@ -17,7 +17,7 @@ const NotFound = () => {
           <h1 className="text-8xl font-black text-gray-200">404</h1>
         </div>
 
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">Application Not Found</h2>
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">Application Not Found OR Page not Found</h2>
         <p className="text-gray-500 mb-10 max-w-sm mx-auto">
           The page you are looking for might have been removed, had its name changed, or is temporarily unavailable .
         </p>

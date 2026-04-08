@@ -5,7 +5,10 @@ from apps.accounts.serializers import CandidateProfileSerializer, CompanySeriali
 
 from .models import InterviewScore, Job, SavedJob
 
+from django.contrib.auth import get_user_model
+from .models import JobApplication
 
+User = get_user_model()
 class JobSerializer(serializers.ModelSerializer):
     company = CompanySerializer(read_only=True)
     is_saved = serializers.SerializerMethodField()
@@ -330,3 +333,24 @@ class HRApprovalSerializer(serializers.ModelSerializer):
             "score_analysis",
             "score",
         ]
+class AssignInterviewerSerializer(serializers.ModelSerializer):
+    interviewer_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        source='interviewer',
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = JobApplication
+        fields = ['interviewer_id']
+
+    def validate_interviewer_id(self, value):
+        """
+        Check if the user is actually an INTERVIEWER or HR.
+        """
+        if value:
+            user_role = getattr(value, "role", None)
+            if user_role not in ["INTERVIEWER", "HR"]:
+                raise serializers.ValidationError("Selected user must be an Interviewer or HR.")
+        return value

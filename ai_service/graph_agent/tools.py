@@ -33,7 +33,6 @@ def extract_json_content(text: str) -> Dict[str, Any]:
         clean_text = re.sub(r"```json|```", "", text).strip()
         return json.loads(clean_text)
     except Exception as e:
-        # Fallback: try to find the first '{' and last '}'
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
             return json.loads(match.group())
@@ -93,13 +92,11 @@ def normalize_scores(state: HiringState) -> HiringState:
         return _build_normalization_response(state, parsed)
 
     except Exception as e:
-        print(f"Groq Normalization failed: {e}. Falling back to Gemini...")
         try:
             response = llm_gemini.invoke(prompt).content
             parsed = extract_json_content(response)
             return _build_normalization_response(state, parsed)
         except Exception as e_final:
-            print(f"Critical Failure in normalize_scores: {e_final}")
             return {
                 **state,
                 "normalized_score": 0.0,
@@ -139,7 +136,6 @@ def evaluate_candidate(state: HiringState) -> HiringState:
         return _finalize_decision_state(state, parsed)
 
     except Exception as e:
-        print(f"Groq Evaluation failed: {e}. Trying Gemini Fallback...")
         try:
             response = llm_gemini.invoke(prompt).content
             parsed = extract_json_content(response)

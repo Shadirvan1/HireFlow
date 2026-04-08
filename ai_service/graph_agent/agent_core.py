@@ -29,7 +29,6 @@ def run_graph_agent(application_id: int, job_embedd_id: int, scores: dict):
     )
 
     result = graph.invoke(initial_state)
-    print(result)
     return result
     
 

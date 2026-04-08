@@ -130,7 +130,6 @@ async def perform_ranking_logic(job_id: str, company_id: str):
             source = "groq_rerank"
 
     except Exception as e:
-        print("LLM rerank error:", e)
 
     for r in final_results:
         if "resume" in r:
@@ -153,10 +152,8 @@ import asyncio
 
 
 async def rank_single_candidate(application_id: str, job_id: str, company_id: str):
-    print(f"DEBUG: [Ranking] Starting for Job {job_id}")
     try:
         job_filter = {"$and": [{"job_id": job_id}, {"company_id": company_id}]}
-        print("DEBUG: [Ranking] Fetched Job Data from Chroma")
         job_data = job_collection.get(
             where=job_filter,
             include=["documents", "embeddings"]
@@ -165,14 +162,12 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
 
         embeddings = job_data.get("embeddings")
         if embeddings is None or len(embeddings) == 0:
-            print(f"[ERROR] No embeddings found for job {job_id}")
             return None
 
         jd_embedding = embeddings[0]
 
         documents = job_data.get("documents") or []
         job_text = documents[0] if documents else ""
-        print("DEBUG: [Ranking] Queried Resumes from Chroma")
 
         query_result = resume_collection.query(
             query_embeddings=[jd_embedding],
@@ -209,7 +204,6 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
             }]
 
             loop = asyncio.get_running_loop()
-            print(f"DEBUG: [Ranking] Calling LLM Reranker for {application_id}...")
             llm_results = await loop.run_in_executor(
                 None,
                 rerank_candidates,  
@@ -217,10 +211,8 @@ async def rank_single_candidate(application_id: str, job_id: str, company_id: st
                 candidate_obj
             )
 
-            print("DEBUG: [Ranking] LLM Reranker Finished!")
             if llm_results and len(llm_results) > 0:
                 final_score = llm_results[0].get("score", vector_score)
-            print("DEBUG: [Ranking] LLM Reranker Finished!")
 
         except Exception as llm_err:
             print(f"[LLM ERROR] {llm_err}")

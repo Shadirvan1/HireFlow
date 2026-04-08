@@ -18,15 +18,12 @@ FASTAPI_URL = settings.FASTAPI_URL
 class AIChatView(APIView):
 
     def get(self, request, version):
-        print("Fetching chat history for user:", request.user.id)
         user_id = str(request.user.id)
         last_timestamp = request.query_params.get("last_timestamp")
-        print(last_timestamp)
         try:
-            print(last_timestamp)
 
             history_data = get_ai_chat_history(
-                room_name=user_id, limit=15, last_timestamp=last_timestamp
+                user_id=user_id, limit=15, last_timestamp=last_timestamp
             )
 
             messages = history_data.get("messages", [])

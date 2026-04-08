@@ -15,8 +15,7 @@ metadata:
     # Global Health Check (For Backend)
     alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
     
-    # --- AI SERVICE HEALTH CHECK ---
-    # Updated to your requested path
+
     alb.ingress.kubernetes.io/healthcheck-path.ai-service: /api/ai/health/
     alb.ingress.kubernetes.io/success-codes.ai-service: '200'
     

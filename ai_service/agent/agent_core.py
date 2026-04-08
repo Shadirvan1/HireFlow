@@ -116,5 +116,4 @@ async def run_agent(
             return "Sorry, I couldn't generate a response."
 
         except Exception as e:
-            print(f"Critical System Failure: {e}")
             return "All AI systems are currently overloaded. Please try again in 10 minutes."

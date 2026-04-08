@@ -17,7 +17,7 @@ from firebase_admin import auth as firebase_auth
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from rest_framework import serializers
-
+from django.utils import timezone
 from apps.accounts.services.mfa_service import enable_mfa
 
 from .models import CandidateProfile, Company, HRProfile, Invite
@@ -570,7 +570,6 @@ class GoogleAuthSerializer(serializers.Serializer):
                 token, google_requests.Request(), google_id
             )
         except ValueError as e:
-            print(f"Google Auth Validation Error: {e}")
             raise serializers.ValidationError({"error": "Token verification failed"})
 
         email = idinfo.get("email")
@@ -764,7 +763,6 @@ class ForgotPasswordSerializer(serializers.Serializer):
         user = self.context.get("user")
 
         if user:
-            print("worked")
             send_password_reset_email.delay(user.id)
 
         return True

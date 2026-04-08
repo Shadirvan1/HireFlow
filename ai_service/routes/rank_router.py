@@ -110,7 +110,6 @@ def rank_candidates(job_id: str):
             source = "gemini_rerank"
             
     except Exception:
-       
         pass
 
  

@@ -3,10 +3,9 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
+from rest_framework.permissions import IsAdminUser
 from .utilities import send_hr_approval_email
 
-# Create your views here.
 User = get_user_model()
 
 import secrets
@@ -16,6 +15,7 @@ from apps.accounts.serializers import HRProfileSerializer
 
 
 class HRDeatilsApiView(APIView):
+    permission_classes=[IsAdminUser]
     serializer_class = HRProfileSerializer
 
     def get(self, request, version):
@@ -27,6 +27,7 @@ class HRDeatilsApiView(APIView):
 
 
 class HRApproveAPIVIEW(APIView):
+    permission_classes=[IsAdminUser]
     def post(self, request, version, id):
         try:
             hr = HRProfile.objects.get(id=id)
@@ -40,6 +41,7 @@ class HRApproveAPIVIEW(APIView):
 
 
 class HRRejectAPIView(APIView):
+    permission_classes=[IsAdminUser]
     def post(self, request, version, id):
         try:
             hr = HRProfile.objects.get(id=id)

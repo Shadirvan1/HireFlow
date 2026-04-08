@@ -29,6 +29,7 @@ from .serializers import (
     JobSerializer,
     ScheduledInterviewSerializer,
     UpdateApplicationStatusSerializer,
+    AssignInterviewerSerializer
 )
 from .tasks import send_hiring_email, send_rejection_email
 
@@ -341,7 +342,6 @@ class ApplicationStatusView(APIView):
             data = serializer.validated_data
             application_id = data["application_id"]
             incoming_status = data["status"]
-            print(application_id, incoming_status)
 
             try:
                 application = JobApplication.objects.get(id=application_id.id)
@@ -545,56 +545,26 @@ class InterviewersListView(APIView):
         except HRProfile.DoesNotExist:
             return Response({"error": "HR Profile not found"}, status=404)
 
-
 class AssignInterviewerView(APIView):
-    """
-    Assign or remove an interviewer for a job application.
-    """
-
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, version, pk):
         try:
             application = JobApplication.objects.get(pk=pk)
         except JobApplication.DoesNotExist:
-            return Response(
-                {"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Application not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        interviewer_id = request.data.get("interviewer_id")
-
-        if interviewer_id:
-            try:
-                user = User.objects.get(id=interviewer_id)
-            except User.DoesNotExist:
-                return Response(
-                    {"error": "Interviewer not found"}, status=status.HTTP_404_NOT_FOUND
-                )
-
-            user_role = getattr(user, "role", None)
-            if user_role not in ["INTERVIEWER", "HR"]:
-                return Response(
-                    {"error": "User is not an interviewer or an HR"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            application.interviewer = user
-
-        else:
-            application.interviewer = None
-
-        application.save()
-
-        return Response(
-            {
+        serializer = AssignInterviewerSerializer(application, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
                 "message": "Interviewer updated successfully",
                 "application_id": application.id,
-                "interviewer_id": (
-                    application.interviewer.id if application.interviewer else None
-                ),
-            },
-            status=status.HTTP_200_OK,
-        )
+                "interviewer_id": application.interviewer.id if application.interviewer else None
+            }, status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CandidateApplicationDetailView(APIView):
@@ -683,11 +653,9 @@ class SubmitInterviewScoreView(APIView):
     def post(self, request, version, application_id):
         data = request.data.copy()
         data["scores"]["application_id"] = application_id
-        print(data)
 
         serializer = InterviewScoreSerializer(data=data["scores"])
         if not serializer.is_valid():
-            print(serializer.errors)
             return Response(serializer.errors, status=400)
 
         validated = serializer.validated_data

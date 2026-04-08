@@ -54,7 +54,6 @@ def auto_approve_job(sender, instance: Job, created, **kwargs):
             )
             response.raise_for_status()
             result = response.json()
-            print(result)
 
             if result.get("trusted"):
                 instance.is_approve = True
@@ -130,7 +129,6 @@ def send_resume_for_ranking(sender, instance, created, **kwargs):
         )
 
         response.raise_for_status()
-        print(f"✅ Application {instance.id} processed successfully")
 
     except Exception as e:
-        print(f"❌ Signal Error: {e}")
+        print(f"Signal Error: {e}")

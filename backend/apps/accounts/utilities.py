@@ -13,7 +13,7 @@ from django.utils.http import urlsafe_base64_encode
 User = get_user_model()
 
 url = os.getenv("FRONT_END_URL_VERIFY")
-
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 FRONT_END_URL_VERIFY = os.getenv("FRONT_END_URL_VERIFY")
 
 
@@ -90,13 +90,11 @@ def send_password_reset_email(user_id):
     """
 
     try:
-        print("Started")
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
-        print("This user is not in database")
+        pass
 
     try:
-        print("strtttt")
         uid = urlsafe_base64_encode(force_bytes(user.id))
         token = default_token_generator.make_token(user)
 
@@ -306,8 +304,6 @@ If you did not request this, ignore this email.
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
-
-        print(f"Delete account OTP sent to {email}")
 
     except Exception as e:
         print(f"Failed to send delete OTP to {email}: {str(e)}")

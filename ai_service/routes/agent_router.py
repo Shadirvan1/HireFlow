@@ -44,7 +44,6 @@ async def evaluate(request: ScoreInput):
             job_embedd_id=request.job_embedd_id,
             scores=request.scores
         )
-        print(f"AI Result: {result}")
         return result
     except Exception as e:
         print(f"Graph Error: {e}")

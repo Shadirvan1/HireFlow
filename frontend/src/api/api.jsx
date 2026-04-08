@@ -13,7 +13,6 @@ const api = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
-// Process queued requests
 const processQueue = (error) => {
   failedQueue.forEach((prom) => {
     if (error) {

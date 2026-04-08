@@ -100,8 +100,6 @@ CANDIDATES:
             return rankings
 
         except Exception as e:
-            print("JSON parse error:", e)
-            print("Cleaned response:", content)
             return None
 
     try:
