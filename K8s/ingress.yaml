@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hireflow-combined-ingress
+  namespace: default
   annotations:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
@@ -12,29 +13,31 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
 
-    # Global Health Check (For Backend)
-    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
-    
-
-    alb.ingress.kubernetes.io/healthcheck-path.ai-service: /api/ai/health/
-    alb.ingress.kubernetes.io/success-codes.ai-service: '200'
-    
+    # --- HEALTH CHECK CONFIGURATION ---
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/success-codes: '200'
-    
-    # Reducing this temporarily from 300 to 30 is highly recommended 
-    # so you don't have to wait 5 minutes to see if it works.
-    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '300'
-    
-    # --- N8N HEALTH CHECK ---
-    alb.ingress.kubernetes.io/success-codes.n8n: '200-499'
+    # Reduced interval so the ALB recovers from 503 in seconds, not minutes
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+
+    # Path-Specific Health Checks (Crucial for 503 fix)
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health/
+    alb.ingress.kubernetes.io/healthcheck-path.ai-service: /api/ai/health/
     alb.ingress.kubernetes.io/healthcheck-path.n8n: /
+    alb.ingress.kubernetes.io/healthcheck-path.my-grafana: /api/health
+    alb.ingress.kubernetes.io/healthcheck-port.my-grafana: '3000'
+    alb.ingress.kubernetes.io/success-codes.my-grafana: '200-399'
+    
+    # Custom success codes for n8n
+    alb.ingress.kubernetes.io/success-codes.n8n: '200-499'
     
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=3600
 
 spec:
   ingressClassName: alb
   rules:
+    # --- MAIN BACKEND & AI SERVICE ---
     - host: api.hire-flow.online
       http:
         paths:
@@ -74,6 +77,7 @@ spec:
                 port:
                   number: 8002
     
+    # --- AUTOMATION (N8N) ---
     - host: n8n.hire-flow.online
       http:
         paths:
@@ -84,3 +88,15 @@ spec:
                 name: n8n
                 port:
                   number: 5678
+
+    # --- MONITORING (GRAFANA) ---
+    - host: grafana.hire-flow.online
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-grafana
+                port:
+                  number: 80

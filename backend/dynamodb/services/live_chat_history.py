@@ -12,6 +12,7 @@ def get_dynamodb_table():
     Production-only table loader.
     Boto3 will automatically use the IAM Role assigned to your EKS Pod.
     """
+
     db = boto3.resource("dynamodb", region_name=REGION)
     return db.Table(TABLE_NAME)
 

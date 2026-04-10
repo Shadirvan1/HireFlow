@@ -12,6 +12,11 @@ spec:
       app: backend
   template:
     metadata:
+      annotations:
+        # These stop the CloudWatch/OTel injection causing the errors
+        sidecar.opentelemetry.io/inject: "false"
+        instrumentation.opentelemetry.io/inject-python: "false"
+        cloudwatch.aws.amazon.com/auto-annotate-python: "false"
       labels:
         app: backend
     spec:
@@ -21,6 +26,10 @@ spec:
         command: ["daphne", "-b", "0.0.0.0", "-p", "8000", "hireflow_main.asgi:application"]
         ports:
         - containerPort: 8000
+        env:
+          # Explicitly setting this helps Daphne find your app
+          - name: DJANGO_SETTINGS_MODULE
+            value: "hireflow_main.settings"
         envFrom:
           - configMapRef:
               name: hireflow-config
@@ -54,6 +63,11 @@ spec:
       app: celery-worker
   template:
     metadata:
+      annotations:
+        # Disable OTel injection here as well
+        sidecar.opentelemetry.io/inject: "false"
+        instrumentation.opentelemetry.io/inject-python: "false"
+        cloudwatch.aws.amazon.com/auto-annotate-python: "false"
       labels:
         app: celery-worker
     spec:
@@ -61,6 +75,9 @@ spec:
       - name: worker
         image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
         command: ["celery", "-A", "hireflow_main", "worker", "--loglevel=info", "--concurrency=4"]
+        env:
+          - name: DJANGO_SETTINGS_MODULE
+            value: "hireflow_main.settings"
         envFrom:
           - configMapRef:
               name: hireflow-config
@@ -82,6 +99,11 @@ spec:
       app: celery-beat
   template:
     metadata:
+      annotations:
+        # Disable OTel injection here as well
+        sidecar.opentelemetry.io/inject: "false"
+        instrumentation.opentelemetry.io/inject-python: "false"
+        cloudwatch.aws.amazon.com/auto-annotate-python: "false"
       labels:
         app: celery-beat
     spec:
@@ -89,6 +111,9 @@ spec:
       - name: beat
         image: 277436022464.dkr.ecr.ap-south-1.amazonaws.com/hireflow-backend:latest
         command: ["celery", "-A", "hireflow_main", "beat", "--loglevel=info"]
+        env:
+          - name: DJANGO_SETTINGS_MODULE
+            value: "hireflow_main.settings"
         envFrom:
           - configMapRef:
               name: hireflow-config
