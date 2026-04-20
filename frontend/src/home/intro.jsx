@@ -7,12 +7,12 @@ import { useNavigate } from "react-router-dom";
 
 // ─── SEO: job categories with keyword-rich anchor text ───────────────────────
 const JOB_CATEGORIES = [
-  { label: "Software Engineering",  icon: <FaCode />,          href: "/jobs?category=software-engineering",  count: "4,200+ jobs" },
-  { label: "Data Science & AI",     icon: <FaDatabase />,      href: "/jobs?category=data-science",          count: "1,800+ jobs" },
-  { label: "Cloud & DevOps",        icon: <FaCloud />,         href: "/jobs?category=cloud-devops",          count: "1,100+ jobs" },
-  { label: "Design & UX",           icon: <FaPalette />,       href: "/jobs?category=design",                count: "900+ jobs"   },
-  { label: "Finance & Accounting",  icon: <FaMoneyBillWave />, href: "/jobs?category=finance",               count: "1,500+ jobs" },
-  { label: "Marketing & Sales",     icon: <FaBullhorn />,      href: "/jobs?category=marketing",             count: "2,100+ jobs" },
+  { label: "Software Engineering",  icon: <FaCode />,          href: "/candidate/jobs?category=software-engineering",  count: "4,200+ jobs" },
+  { label: "Data Science & AI",     icon: <FaDatabase />,      href: "/candidate/jobs?category=data-science",          count: "1,800+ jobs" },
+  { label: "Cloud & DevOps",        icon: <FaCloud />,         href: "/candidate/jobs?category=cloud-devops",          count: "1,100+ jobs" },
+  { label: "Design & UX",           icon: <FaPalette />,       href: "/candidate/jobs?category=design",                count: "900+ jobs"   },
+  { label: "Finance & Accounting",  icon: <FaMoneyBillWave />, href: "/candidate/jobs?category=finance",               count: "1,500+ jobs" },
+  { label: "Marketing & Sales",     icon: <FaBullhorn />,      href: "/candidate/jobs?category=marketing",             count: "2,100+ jobs" },
 ];
 
 export default function Intro() {
@@ -240,22 +240,7 @@ export default function Intro() {
 
         </main>
 
-        {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-        <footer className="max-w-7xl mx-auto w-full py-8 px-6 relative z-10">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-slate-400 border-t border-slate-200/60 pt-8">
-            <p>© {new Date().getFullYear()} Hire-Flow. India's Job Search &amp; Hiring Platform.</p>
-            <nav aria-label="Footer navigation">
-              <ul className="flex gap-6" role="list">
-                <li><a href="/about"      className="hover:text-slate-600 transition-colors">About</a></li>
-                <li><a href="/blog"       className="hover:text-slate-600 transition-colors">Blog</a></li>
-                <li><a href="/contact"    className="hover:text-slate-600 transition-colors">Contact</a></li>
-                <li><a href="/privacy"    className="hover:text-slate-600 transition-colors">Privacy</a></li>
-                <li><a href="/sitemap"    className="hover:text-slate-600 transition-colors">Sitemap</a></li>
-              </ul>
-            </nav>
-          </div>
-        </footer>
-
+      
       </div>
 
       <style>{`
