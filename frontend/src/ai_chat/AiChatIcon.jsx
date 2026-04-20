@@ -30,14 +30,24 @@ export default function AIChatButton() {
     try {
       const url = timestamp ? `/ai/chat/?last_timestamp=${timestamp}` : "/ai/chat/";
       const response = await api.get(url);
-      const newMessages = response.data.history || [];
+      
+      // Get history and ensure it's sorted by timestamp (ascending)
+      // This prevents the "AI message before User message" flip during pagination
+      let newMessages = response.data.history || [];
+      newMessages = [...newMessages].sort((a, b) => a.timestamp - b.timestamp);
 
       if (timestamp) {
         const container = scrollRef.current;
         const oldHeight = container.scrollHeight;
+        
+        // Prepend historical messages to the current state
         setMessages((prev) => [...newMessages, ...prev]);
+        
+        // Maintain scroll position so the user doesn't "jump" when history loads
         setTimeout(() => {
-          container.scrollTop = container.scrollHeight - oldHeight;
+          if (container) {
+            container.scrollTop = container.scrollHeight - oldHeight;
+          }
         }, 0);
       } else {
         setMessages(newMessages);
@@ -62,6 +72,8 @@ export default function AIChatButton() {
     const el = e.target;
     const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollBtn(distFromBottom > 120);
+    
+    // Trigger infinite scroll when hitting the top
     if (el.scrollTop === 0 && lastEvaluatedKey && !isLoadingHistory) {
       fetchHistory(lastEvaluatedKey.timestamp);
     }
@@ -83,6 +95,7 @@ export default function AIChatButton() {
         typeof response.data.response === "string"
           ? response.data.response
           : JSON.stringify(response.data.response);
+      
       setMessages((prev) => [
         ...prev,
         { role: "ai", content: botResponse, timestamp: Date.now() },
@@ -111,7 +124,6 @@ export default function AIChatButton() {
 
   return (
     <>
-      {/* FAB Button */}
       {!isOpen && (
         <motion.button
           initial={{ scale: 0, opacity: 0 }}
@@ -123,7 +135,6 @@ export default function AIChatButton() {
         >
           <div className="relative bg-gradient-to-br from-indigo-600 to-blue-600 p-4 rounded-2xl shadow-2xl shadow-indigo-500/30 text-white">
             <Bot size={26} />
-            {/* Pulse ring */}
             <span className="absolute inset-0 rounded-2xl animate-ping bg-indigo-500/30" />
           </div>
           <div className="absolute -top-10 right-0 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">
@@ -132,7 +143,6 @@ export default function AIChatButton() {
         </motion.button>
       )}
 
-      {/* Chat Modal */}
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm">
@@ -143,12 +153,9 @@ export default function AIChatButton() {
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className="w-full sm:max-w-2xl h-[92vh] sm:h-[85vh] sm:max-h-[780px] bg-[#0a0c12] border border-gray-800/80 sm:rounded-3xl rounded-t-3xl flex flex-col overflow-hidden shadow-2xl"
             >
-
               {/* Header */}
               <div className="relative bg-gradient-to-r from-indigo-600 via-indigo-600 to-blue-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
-                {/* Glow overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/80 to-blue-600/80 backdrop-blur-sm" />
-
                 <div className="relative flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/15 rounded-2xl flex items-center justify-center border border-white/20">
                     <Bot size={20} className="text-white" />
@@ -164,7 +171,6 @@ export default function AIChatButton() {
                     <p className="text-indigo-200 text-xs">Your personal hiring assistant</p>
                   </div>
                 </div>
-
                 <button
                   onClick={() => setIsOpen(false)}
                   className="relative w-8 h-8 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl flex items-center justify-center transition-colors"
@@ -173,14 +179,13 @@ export default function AIChatButton() {
                 </button>
               </div>
 
-              {/* Messages area */}
+              {/* Messages Area */}
               <div
                 ref={scrollRef}
                 onScroll={handleScroll}
                 className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-[#0a0c12]"
                 style={{ scrollbarWidth: "thin", scrollbarColor: "#1e2030 transparent" }}
               >
-                {/* Load more indicator */}
                 {isLoadingHistory && (
                   <div className="flex justify-center py-2">
                     <div className="flex items-center gap-2 bg-gray-800/60 border border-gray-700/50 rounded-full px-4 py-2">
@@ -190,7 +195,6 @@ export default function AIChatButton() {
                   </div>
                 )}
 
-                {/* Empty state */}
                 {messages.length === 0 && !isLoadingHistory && (
                   <div className="flex flex-col items-center justify-center h-full gap-6 py-8">
                     <div className="w-16 h-16 bg-gradient-to-br from-indigo-500/20 to-blue-500/20 border border-indigo-500/30 rounded-3xl flex items-center justify-center">
@@ -200,7 +204,6 @@ export default function AIChatButton() {
                       <h3 className="text-white font-semibold text-base">How can I help you?</h3>
                       <p className="text-gray-500 text-sm mt-1">Ask me anything about jobs, hiring, or your career.</p>
                     </div>
-                    {/* Suggestion chips */}
                     <div className="flex flex-wrap gap-2 justify-center px-4">
                       {suggestions.map((s) => (
                         <button
@@ -215,7 +218,6 @@ export default function AIChatButton() {
                   </div>
                 )}
 
-                {/* Messages */}
                 {messages.map((msg, idx) => (
                   <motion.div
                     key={idx}
@@ -224,7 +226,6 @@ export default function AIChatButton() {
                     transition={{ duration: 0.2 }}
                     className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    {/* AI avatar */}
                     {msg.role === "ai" && (
                       <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-indigo-500/30 to-blue-500/30 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 mt-1">
                         <Bot size={14} className="text-indigo-400" />
@@ -250,7 +251,6 @@ export default function AIChatButton() {
                       </span>
                     </div>
 
-                    {/* User avatar */}
                     {msg.role === "user" && (
                       <div className="w-7 h-7 rounded-xl bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center flex-shrink-0 mt-1">
                         <span className="text-indigo-300 text-xs font-bold">U</span>
@@ -259,7 +259,6 @@ export default function AIChatButton() {
                   </motion.div>
                 ))}
 
-                {/* Typing indicator */}
                 {isTyping && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
@@ -283,7 +282,7 @@ export default function AIChatButton() {
                 )}
               </div>
 
-              {/* Scroll to bottom button */}
+              {/* Scroll Button */}
               <AnimatePresence>
                 {showScrollBtn && (
                   <motion.button
@@ -298,7 +297,7 @@ export default function AIChatButton() {
                 )}
               </AnimatePresence>
 
-              {/* Input area */}
+              {/* Input Footer */}
               <div className="px-4 py-4 border-t border-gray-800/80 bg-[#0d0f18] flex-shrink-0">
                 <form onSubmit={handleSendMessage} className="flex items-end gap-2.5">
                   <div className="flex-1 relative">
@@ -339,12 +338,10 @@ export default function AIChatButton() {
                     )}
                   </button>
                 </form>
-
                 <p className="text-center text-[10px] text-gray-700 mt-2.5">
                   HireFlow AI · Shift+Enter for new line
                 </p>
               </div>
-
             </motion.div>
           </div>
         )}
@@ -352,3 +349,4 @@ export default function AIChatButton() {
     </>
   );
 }
+

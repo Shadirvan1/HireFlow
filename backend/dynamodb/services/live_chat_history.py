@@ -39,7 +39,6 @@ def save_message_to_dynamo(room_name, sender_id, receiver_id, text, message_id):
         table.put_item(Item=item)
         return item
     except Exception as e:
-        # In production, logging is better than print, but this will show in EKS logs
         print(f"Error saving to DynamoDB: {e}")
         return None
 
