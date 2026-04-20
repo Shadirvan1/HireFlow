@@ -11,8 +11,10 @@ from dynamodb.services.live_chat_history import save_message_to_dynamo
 class PrivateChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope["user"]
+        print(f"User {self.user} is attempting to connect to WebSocket.")
 
         if self.user.is_anonymous:
+            print("Anonymous user attempted to connect to WebSocket. Connection rejected.")
             await self.close()
             return
 
@@ -26,7 +28,6 @@ class PrivateChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # Track online status in Redis cache
         cache.set(f"user_online_{self.user.id}", True, timeout=3600)
 
         await self.channel_layer.group_add(self.room_name, self.channel_name)

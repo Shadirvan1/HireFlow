@@ -17,7 +17,6 @@ export default function UnifiedDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  console.log(data)
 
   useEffect(() => {
     const fetchDashboardData = async () => {

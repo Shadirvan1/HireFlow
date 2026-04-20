@@ -27,7 +27,7 @@ def save_ai_chat_history(user_id, message, response, company_id=None):
         "status": "completed",
     }
     
-    try:
+    try: 
         chat_table.put_item(Item=item)
         return item 
     except ClientError as e:
@@ -40,6 +40,7 @@ def save_ai_chat_history(user_id, message, response, company_id=None):
 def get_ai_chat_history(user_id, limit=20, last_timestamp=None, *args, **kwargs):
     """Retrieves and formats history for the frontend."""
     try:
+        
         query_params = {
             "KeyConditionExpression": Key("user_id").eq(str(user_id)),
             "ScanIndexForward": False,
