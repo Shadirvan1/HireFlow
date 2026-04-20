@@ -48,8 +48,8 @@ export default function SecuritySettings() {
         </h1>
 
         {/* Account Security */}
-        <div className="bg-white rounded-2xl shadow p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-700">
+        <div className="bg-wite rounded-2xl shadow p-6">
+          <h2 className="text-xl font-semibold mb-4 text-black">
             Account Security
           </h2>
           <div className="space-y-3">

@@ -41,7 +41,7 @@ const HiredCandidatesRoster = () => {
             <input 
               type="text"
               placeholder="Search by name or role..."
-              className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-80"
+              className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full md:w-80 text-black"
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
