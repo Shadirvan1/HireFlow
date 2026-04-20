@@ -1,77 +1,70 @@
-from urllib.parse import parse_qs
-from channels.db import database_sync_to_async
-from django.conf import settings
 import jwt
+from django.conf import settings
+from channels.db import database_sync_to_async
+from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import get_user_model
 
 @database_sync_to_async
 def get_user(user_id):
-    from django.contrib.auth import get_user_model  
-    from django.contrib.auth.models import AnonymousUser
-
     User = get_user_model()
     try:
         user = User.objects.get(id=user_id)
         print(f"[DEBUG] Found User: {user} (ID: {user_id})")
         return user
     except User.DoesNotExist:
-        print(f"[DEBUG] User with ID {user_id} not found in database.")
+        print(f"[DEBUG] User with ID {user_id} not found.")
         return AnonymousUser()
-
 
 class JWTAuthMiddleware:
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        from django.contrib.auth.models import AnonymousUser  
-
-        # 1. Capture the query string
-        query_string = scope["query_string"].decode()
-        query_params = parse_qs(query_string)
+        # 1. Get all headers from the scope
+        # Headers are a list of tuples: [(b'host', b'localhost'), (b'cookie', b'access_token=...')]
+        headers = dict(scope.get("headers", []))
         
-        print(f"\n--- JWT Auth Middleware Debug ---")
-        print(f"[DEBUG] Query Params: {query_params}")
+        # 2. Extract and decode the 'cookie' header
+        cookie_header = headers.get(b"cookie", b"").decode()
+        
+        # 3. Parse the cookie string into a dictionary
+        # Example: "access_token=abc; csrftoken=123" -> {'access_token': 'abc', 'csrftoken': '123'}
+        cookies = {
+            c.split('=')[0].strip(): c.split('=')[1].strip() 
+            for c in cookie_header.split(';') if '=' in c
+        }
 
-        token = query_params.get("token")
+        token = cookies.get("access_token")
 
+        print(f"\n--- JWT Cookie Auth Debug ---")
         if token:
-            raw_token = token[0]
-            print(f"[DEBUG] Token found: {raw_token[:15]}... (length: {len(raw_token)})")
-            
+            print(f"[DEBUG] Token found in cookies: {token[:15]}...")
             try:
-                # 2. Attempt to decode
+                # 4. Decode the JWT
                 payload = jwt.decode(
-                    raw_token,
+                    token,
                     settings.SECRET_KEY,
                     algorithms=["HS256"]
                 )
-                print(f"[DEBUG] Decoded Payload: {payload}")
-                
-                # 3. Get user from DB
                 user_id = payload.get("user_id")
+                
                 if user_id:
                     scope["user"] = await get_user(user_id)
                 else:
-                    print("[DEBUG] 'user_id' key missing from JWT payload.")
+                    print("[DEBUG] No 'user_id' in payload.")
                     scope["user"] = AnonymousUser()
 
             except jwt.ExpiredSignatureError:
-                print("[DEBUG] JWT Error: Token has expired.")
+                print("[DEBUG] JWT Error: Token expired.")
                 scope["user"] = AnonymousUser()
-
-            except jwt.InvalidTokenError as e:
-                print(f"[DEBUG] JWT Error: Invalid token ({str(e)})")
+            except jwt.InvalidTokenError:
+                print("[DEBUG] JWT Error: Invalid token.")
                 scope["user"] = AnonymousUser()
-            
-            except Exception as e:
-                print(f"[DEBUG] Unexpected Error during Auth: {str(e)}")
-                scope["user"] = AnonymousUser()
-
         else:
-            print("[DEBUG] No token provided in URL query string.")
+            print("[DEBUG] No 'access_token' cookie found in headers.")
             scope["user"] = AnonymousUser()
 
         print(f"[DEBUG] Final Scope User: {scope['user']}")
-        print(f"----------------------------------\n")
+        print(f"------------------------------\n")
 
         return await self.app(scope, receive, send)

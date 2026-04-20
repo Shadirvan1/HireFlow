@@ -2,21 +2,6 @@
 let socket = null;
 let currentCallback = null; 
 
-function getAccessTokenFromCookie() {
-    const name = "access_token=";
-    const decoded = decodeURIComponent(document.cookie);
-    console.log(document.cookie);
-    const parts = decoded.split(";");
-
-    for (let part of parts) {
-        part = part.trim();
-        if (part.startsWith(name)) {
-            return part.substring(name.length);
-        }
-    }
-    return null;
-}
-
 
 const BASE_URL = import.meta.env.VITE_WS_BASE;
 
@@ -26,12 +11,8 @@ export const connectSocket = (userId, onMessage) => {
     
     currentCallback = onMessage;
 
-    const token = getAccessTokenFromCookie();
-    if (!token) {
-        console.warn("⚠️ No access token found in cookies. Socket connection aborted.");
-        return;
-    }
-    const rawUrl = `${BASE_URL}/chat/${userId}/?token=${token}`;
+
+    const rawUrl = `${BASE_URL}/chat/${userId}/`;
     const targetUrl = new URL(rawUrl, window.location.origin).href;
 
     if (socket) {
