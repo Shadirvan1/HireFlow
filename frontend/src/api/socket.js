@@ -5,6 +5,7 @@ let currentCallback = null;
 function getAccessTokenFromCookie() {
     const name = "access_token=";
     const decoded = decodeURIComponent(document.cookie);
+    console.log(document.cookie);
     const parts = decoded.split(";");
 
     for (let part of parts) {
@@ -25,7 +26,6 @@ export const connectSocket = (userId, onMessage) => {
     
     currentCallback = onMessage;
 
-    // Construct the absolute URL for reliable comparison
     const token = getAccessTokenFromCookie();
     if (!token) {
         console.warn("⚠️ No access token found in cookies. Socket connection aborted.");
