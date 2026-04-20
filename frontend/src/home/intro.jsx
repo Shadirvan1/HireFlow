@@ -213,18 +213,18 @@ export default function Intro() {
             </h2>
             <ul className="flex flex-wrap gap-2" role="list">
               {[
-                { label: "Fresher Jobs",              href: "/jobs?experience=fresher"         },
-                { label: "Remote Jobs India",         href: "/jobs?type=remote"                },
-                { label: "Work From Home",            href: "/jobs?type=work-from-home"        },
-                { label: "IT Jobs Bangalore",         href: "/jobs?location=bangalore&cat=it"  },
-                { label: "Jobs in Kerala",            href: "/jobs?location=kerala"            },
-                { label: "Part Time Jobs",            href: "/jobs?type=part-time"             },
-                { label: "Internships India",         href: "/jobs?type=internship"            },
-                { label: "Python Developer Jobs",     href: "/jobs?q=python-developer"         },
-                { label: "React Developer Jobs",      href: "/jobs?q=react-developer"          },
-                { label: "Data Analyst Jobs",         href: "/jobs?q=data-analyst"             },
-                { label: "Post a Job Free",           href: "/post-job"                        },
-                { label: "HR Management Software",    href: "/features/hr-management"          },
+                { label: "Fresher Jobs",              href: "/candidate/jobs?experience=fresher"         },
+                { label: "Remote Jobs India",         href: "/candidate/jobs?type=remote"                },
+                { label: "Work From Home",            href: "/candidate/jobs?type=work-from-home"        },
+                { label: "IT Jobs Bangalore",         href: "/candidate/jobs?location=bangalore&cat=it"  },
+                { label: "Jobs in Kerala",            href: "/candidate/jobs?location=kerala"            },
+                { label: "Part Time Jobs",            href: "/candidate/jobs?type=part-time"             },
+                { label: "Internships India",         href: "/candidate/jobs?type=internship"            },
+                { label: "Python Developer Jobs",     href: "/candidate/jobs?q=python-developer"         },
+                { label: "React Developer Jobs",      href: "/candidate/jobs?q=react-developer"          },
+                { label: "Data Analyst Jobs",         href: "/candidate/jobs?q=data-analyst"             },
+                { label: "Post a Job Free",           href: "/candidate/post-job"                        },
+                { label: "HR Management Software",    href: "/candidate/features/hr-management"          },
               ].map((link) => (
                 <li key={link.href}>
                   <a

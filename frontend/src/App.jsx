@@ -56,6 +56,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Login_protector><Intro /></Login_protector>} />
           <Route path="/login" element={<Login_protector><Login /></Login_protector>} />
+          <Route path="/login" element={<Login_protector><Login /></Login_protector>} />
+          <Route path="/login" element={<Login_protector><Login /></Login_protector>} />
+          <Route path="/login" element={<Login_protector><Login /></Login_protector>} />
+          <Route path="/login" element={<Login_protector><Login /></Login_protector>} />
           <Route path="/login/mfa" element={<Login_protector><MfaLogin /></Login_protector>} />
           <Route path="/register" element={<Login_protector><Seeker_register /></Login_protector>} />
           <Route path="/hr/register" element={<Login_protector><HRRegister /></Login_protector>} />
