@@ -21,6 +21,7 @@ export default function AIChatButton() {
       fetchHistory();
     }
     if (isOpen) {
+      // Small delay ensures the transition finish before focusing
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
@@ -31,27 +32,31 @@ export default function AIChatButton() {
       const url = timestamp ? `/ai/chat/?last_timestamp=${timestamp}` : "/ai/chat/";
       const response = await api.get(url);
       
-      // Get history and ensure it's sorted by timestamp (ascending)
-      // This prevents the "AI message before User message" flip during pagination
-      let newMessages = response.data.history || [];
-      newMessages = [...newMessages].sort((a, b) => a.timestamp - b.timestamp);
+      let fetchedHistory = response.data.history || [];
+      
+      /** * CRITICAL FIX: Robust Sorting
+       * We convert all timestamps to numbers to ensure accurate comparison.
+       */
+      const sortedHistory = [...fetchedHistory].sort((a, b) => {
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      });
 
       if (timestamp) {
+        // Prepending historical messages
         const container = scrollRef.current;
         const oldHeight = container.scrollHeight;
         
-        // Prepend historical messages to the current state
-        setMessages((prev) => [...newMessages, ...prev]);
+        setMessages((prev) => [...sortedHistory, ...prev]);
         
-        // Maintain scroll position so the user doesn't "jump" when history loads
-        setTimeout(() => {
+        // Use requestAnimationFrame for more reliable scroll positioning
+        requestAnimationFrame(() => {
           if (container) {
             container.scrollTop = container.scrollHeight - oldHeight;
           }
-        }, 0);
+        });
       } else {
-        setMessages(newMessages);
-        setTimeout(scrollToBottom, 100);
+        setMessages(sortedHistory);
+        requestAnimationFrame(scrollToBottom);
       }
 
       setLastEvaluatedKey(response.data.last_evaluated_key);
@@ -64,7 +69,10 @@ export default function AIChatButton() {
 
   const scrollToBottom = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
   };
 
@@ -83,23 +91,30 @@ export default function AIChatButton() {
     e.preventDefault();
     if (!input.trim()) return;
 
+    // Use current time for the user message
     const userMessage = { role: "user", content: input, timestamp: Date.now() };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsTyping(true);
-    setTimeout(scrollToBottom, 10);
+    
+    // Quick scroll to show the user's message
+    requestAnimationFrame(scrollToBottom);
 
     try {
       const response = await api.post("/ai/chat/", { message: input });
-      const botResponse =
-        typeof response.data.response === "string"
-          ? response.data.response
-          : JSON.stringify(response.data.response);
       
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", content: botResponse, timestamp: Date.now() },
-      ]);
+      // Handle different response formats safely
+      const botContent = typeof response.data.response === "string" 
+        ? response.data.response 
+        : JSON.stringify(response.data.response);
+
+      const botResponse = { 
+        role: "ai", 
+        content: botContent, 
+        timestamp: Date.now() 
+      };
+      
+      setMessages((prev) => [...prev, botResponse]);
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -107,7 +122,7 @@ export default function AIChatButton() {
       ]);
     } finally {
       setIsTyping(false);
-      setTimeout(scrollToBottom, 10);
+      requestAnimationFrame(scrollToBottom);
     }
   };
 
@@ -220,7 +235,7 @@ export default function AIChatButton() {
 
                 {messages.map((msg, idx) => (
                   <motion.div
-                    key={idx}
+                    key={`${idx}-${msg.timestamp}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
@@ -243,7 +258,7 @@ export default function AIChatButton() {
                             <ReactMarkdown>{String(msg.content)}</ReactMarkdown>
                           </div>
                         ) : (
-                          <p>{String(msg.content)}</p>
+                          <p className="whitespace-pre-wrap">{String(msg.content)}</p>
                         )}
                       </div>
                       <span className="text-[10px] text-gray-600 px-1">
