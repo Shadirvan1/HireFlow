@@ -1,272 +1,623 @@
-import React from "react";
-import {
-  FaUsers, FaBriefcase, FaChartLine, FaClipboardCheck, FaArrowRight,
-  FaCode, FaDatabase, FaCloud, FaPalette, FaMoneyBillWave, FaBullhorn
-} from "react-icons/fa";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// ─── SEO: job categories with keyword-rich anchor text ───────────────────────
 const JOB_CATEGORIES = [
-  { label: "Software Engineering",  icon: <FaCode />,          href: "/candidate/jobs?category=software-engineering",  count: "4,200+ jobs" },
-  { label: "Data Science & AI",     icon: <FaDatabase />,      href: "/candidate/jobs?category=data-science",          count: "1,800+ jobs" },
-  { label: "Cloud & DevOps",        icon: <FaCloud />,         href: "/candidate/jobs?category=cloud-devops",          count: "1,100+ jobs" },
-  { label: "Design & UX",           icon: <FaPalette />,       href: "/candidate/jobs?category=design",                count: "900+ jobs"   },
-  { label: "Finance & Accounting",  icon: <FaMoneyBillWave />, href: "/candidate/jobs?category=finance",               count: "1,500+ jobs" },
-  { label: "Marketing & Sales",     icon: <FaBullhorn />,      href: "/candidate/jobs?category=marketing",             count: "2,100+ jobs" },
+  { label: "Software Eng.",    icon: "💻", href: "/candidate/jobs?category=software-engineering",  count: "4,200+ jobs" },
+  { label: "Data & AI",        icon: "📊", href: "/candidate/jobs?category=data-science",          count: "1,800+ jobs" },
+  { label: "Cloud & DevOps",   icon: "☁️", href: "/candidate/jobs?category=cloud-devops",          count: "1,100+ jobs" },
+  { label: "Design & UX",      icon: "🎨", href: "/candidate/jobs?category=design",                count: "900+ jobs"   },
+  { label: "Finance",          icon: "💰", href: "/candidate/jobs?category=finance",               count: "1,500+ jobs" },
+  { label: "Marketing",        icon: "📣", href: "/candidate/jobs?category=marketing",             count: "2,100+ jobs" },
+];
+
+const FILTERS = ["All", "Remote", "Full-time", "Fresher friendly", "₹10L+", "Urgent hiring"];
+
+const POPULAR = [
+  { label: "Fresher Jobs",           href: "/candidate/jobs?experience=fresher"        },
+  { label: "Remote Jobs India",      href: "/candidate/jobs?type=remote"               },
+  { label: "Work From Home",         href: "/candidate/jobs?type=work-from-home"       },
+  { label: "IT Jobs Bangalore",      href: "/candidate/jobs?location=bangalore&cat=it" },
+  { label: "Jobs in Kerala",         href: "/candidate/jobs?location=kerala"           },
+  { label: "Part Time Jobs",         href: "/candidate/jobs?type=part-time"            },
+  { label: "Internships India",      href: "/candidate/jobs?type=internship"           },
+  { label: "Python Developer Jobs",  href: "/candidate/jobs?q=python-developer"        },
+  { label: "React Developer Jobs",   href: "/candidate/jobs?q=react-developer"        },
+  { label: "Data Analyst Jobs",      href: "/candidate/jobs?q=data-analyst"           },
+];
+
+const SAMPLE_JOBS = [
+  { logo: "IN", logoColor: "#0052CC", title: "Senior React Developer",   company: "Infosys",   location: "Bangalore", type: "Hybrid",  salary: "₹18–24 LPA", posted: "2h ago",  tags: ["React", "TypeScript", "Node.js"], isNew: true,  isRemote: false },
+  { logo: "ZO", logoColor: "#1D9E75", title: "Python Backend Engineer",  company: "Zoho",      location: "Chennai",   type: "Remote",  salary: "₹14–20 LPA", posted: "4h ago",  tags: ["Python", "FastAPI", "PostgreSQL"], isNew: true,  isRemote: true  },
+  { logo: "FK", logoColor: "#F26522", title: "Data Scientist",           company: "Flipkart",  location: "Bangalore", type: "On-site", salary: "₹20–30 LPA", posted: "6h ago",  tags: ["ML", "Python", "Spark"],          isNew: false, isRemote: false },
+  { logo: "SW", logoColor: "#FC8019", title: "UI/UX Designer",           company: "Swiggy",    location: "Hyderabad", type: "Remote",  salary: "₹10–16 LPA", posted: "1d ago",  tags: ["Figma", "Prototyping", "Research"], isNew: false, isRemote: true  },
+  { logo: "TC", logoColor: "#003087", title: "DevOps Engineer",          company: "TCS",       location: "Mumbai",    type: "Hybrid",  salary: "₹16–22 LPA", posted: "1d ago",  tags: ["Kubernetes", "AWS", "Terraform"], isNew: false, isRemote: false },
+  { logo: "CR", logoColor: "#1A1A2E", title: "Product Manager",          company: "CRED",      location: "Bangalore", type: "On-site", salary: "₹25–40 LPA", posted: "2d ago",  tags: ["Strategy", "Agile", "SQL"],       isNew: false, isRemote: false },
 ];
 
 export default function Intro() {
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+  const [location, setLocation] = useState("All India");
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [activeCat, setActiveCat] = useState(0);
+  const [savedJobs, setSavedJobs] = useState(new Set());
+  const [visibleCount, setVisibleCount] = useState(4);
+
+  const toggleSave = (e, idx) => {
+    e.stopPropagation();
+    setSavedJobs((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  };
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    navigate(`/candidate/jobs?q=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") handleSearch();
+  };
 
   return (
     <>
-      {/*
-        ── SEO NOTES ──────────────────────────────────────────────────────────
-        1. <main> + <article> give Googlebot semantic landmarks
-        2. <h1> contains primary keyword "job search platform India"
-        3. <h2> tags structure the page for featured snippets
-        4. Job category <a> tags create crawlable internal links
-        5. Stats are in <dl> / <dd> for machine-readable structured data
-        6. Hidden <p> gives extra keyword density without hurting UX
-        ─────────────────────────────────────────────────────────────────────
-      */}
+      <style>{`
+        .hf-page {
+          min-height: 100vh;
+          background: #f4f6f9;
+          font-family: 'DM Sans', 'Segoe UI', sans-serif;
+          color: #1a1f36;
+          padding: 2.5rem 1.25rem 5rem;
+        }
+        .hf-inner {
+          max-width: 920px;
+          margin: 0 auto;
+        }
 
-      <div
-        className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col justify-between relative overflow-hidden selection:bg-indigo-100"
-      >
-        {/* Decorative blobs — purely visual, aria-hidden */}
-        <div aria-hidden="true" className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-200/40 rounded-full blur-[100px] animate-pulse pointer-events-none" />
-        <div aria-hidden="true" className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-200/40 rounded-full blur-[120px] pointer-events-none" />
-        <div aria-hidden="true" className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-cyan-100/50 rounded-full blur-[80px] pointer-events-none" />
+        /* ── HERO ── */
+        .hf-hero {
+          background: #ffffff;
+          border: 1px solid #e8eaef;
+          border-radius: 20px;
+          padding: 2.5rem 2.25rem 2rem;
+          margin-bottom: 1.25rem;
+        }
+        .hf-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: #eef9f5;
+          border: 1px solid #b3e6d3;
+          border-radius: 99px;
+          padding: 4px 13px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #0d7a56;
+          margin-bottom: 1.25rem;
+        }
+        .hf-badge-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #1D9E75;
+        }
+        .hf-hero h1 {
+          font-size: clamp(26px, 4vw, 36px);
+          font-weight: 700;
+          line-height: 1.2;
+          color: #1a1f36;
+          margin-bottom: 0.6rem;
+          letter-spacing: -0.5px;
+        }
+        .hf-hero h1 span {
+          color: #185FA5;
+        }
+        .hf-hero p {
+          font-size: 15px;
+          color: #6b7280;
+          line-height: 1.65;
+          max-width: 500px;
+          margin-bottom: 1.75rem;
+        }
 
-        <main className="max-w-7xl mx-auto px-6 py-24 relative z-10 w-full">
+        /* ── SEARCH BAR ── */
+        .hf-search {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 1.75rem;
+          flex-wrap: wrap;
+        }
+        .hf-search-input {
+          flex: 1;
+          min-width: 180px;
+          font-size: 14px;
+          padding: 11px 15px;
+          border: 1.5px solid #e2e5eb;
+          border-radius: 10px;
+          background: #f9fafb;
+          color: #1a1f36;
+          outline: none;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .hf-search-input:focus {
+          border-color: #378ADD;
+          background: #fff;
+          box-shadow: 0 0 0 3px rgba(55,138,221,0.12);
+        }
+        .hf-search-select {
+          font-size: 14px;
+          padding: 11px 13px;
+          border: 1.5px solid #e2e5eb;
+          border-radius: 10px;
+          background: #f9fafb;
+          color: #1a1f36;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.15s;
+        }
+        .hf-search-select:focus {
+          border-color: #378ADD;
+        }
+        .hf-search-btn {
+          padding: 11px 24px;
+          background: #185FA5;
+          color: #fff;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          white-space: nowrap;
+          transition: background 0.15s, transform 0.1s;
+        }
+        .hf-search-btn:hover {
+          background: #1472c4;
+        }
+        .hf-search-btn:active {
+          transform: scale(0.98);
+        }
 
-          {/* ── HERO SECTION ──────────────────────────────────────────────── */}
-          <article className="grid md:grid-cols-2 gap-20 mb-24">
+        /* ── STATS ── */
+        .hf-stats {
+          display: flex;
+          gap: 2.5rem;
+          padding-top: 1.25rem;
+          border-top: 1px solid #f0f1f5;
+          flex-wrap: wrap;
+        }
+        .hf-stat-val {
+          font-size: 22px;
+          font-weight: 700;
+          color: #1a1f36;
+          letter-spacing: -0.5px;
+        }
+        .hf-stat-lbl {
+          font-size: 12px;
+          color: #9ca3af;
+          margin-top: 2px;
+        }
 
-            {/* LEFT: headline + CTAs */}
-            <div className="space-y-10 flex flex-col justify-center">
+        /* ── SECTION LABEL ── */
+        .hf-section-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: #9ca3af;
+          margin: 1.75rem 0 0.75rem;
+        }
 
-              <div className="inline-flex self-start items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-md border border-white/60 shadow-sm">
-                <span className="flex h-2 w-2 relative" aria-hidden="true">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-600 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
-                </span>
-                <span className="text-xs font-bold uppercase tracking-widest text-slate-600">
-                  Recruitment 2.0
-                </span>
-              </div>
+        /* ── CATEGORIES ── */
+        .hf-cats {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+          gap: 8px;
+          margin-bottom: 1.5rem;
+        }
+        .hf-cat {
+          background: #fff;
+          border: 1.5px solid #e8eaef;
+          border-radius: 12px;
+          padding: 14px 10px;
+          cursor: pointer;
+          transition: border-color 0.15s, background 0.15s, transform 0.1s;
+          text-align: center;
+          text-decoration: none;
+          display: block;
+        }
+        .hf-cat:hover {
+          border-color: #93c5fd;
+          background: #f0f7ff;
+          transform: translateY(-1px);
+        }
+        .hf-cat.active {
+          border-color: #185FA5;
+          background: #eff6ff;
+        }
+        .hf-cat.active .hf-cat-lbl {
+          color: #185FA5;
+        }
+        .hf-cat-icon {
+          font-size: 20px;
+          margin-bottom: 7px;
+          display: block;
+        }
+        .hf-cat-lbl {
+          font-size: 13px;
+          font-weight: 500;
+          color: #374151;
+          display: block;
+          margin-bottom: 3px;
+          line-height: 1.3;
+        }
+        .hf-cat-count {
+          font-size: 11px;
+          color: #9ca3af;
+        }
 
-              {/*
-                SEO: h1 leads with the primary keyword.
-                The visual gradient span is decorative but the full text
-                "Hire-Flow – India's #1 Job Search Platform" is readable by crawlers.
-              */}
-              <h1 className="text-5xl md:text-7xl font-bold leading-[1.1] tracking-tight text-slate-900">
-                Find Jobs &amp; <br />
-                <span
-                  className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"
-                  aria-label="Hire Talent in India"
-                >
-                  Hire Talent
-                </span>
-                <br />
-                <span className="text-4xl md:text-5xl text-slate-500 font-medium">in India</span>
-              </h1>
+        /* ── FILTERS ── */
+        .hf-filters {
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+          margin-bottom: 1rem;
+        }
+        .hf-filter-btn {
+          font-size: 12px;
+          font-weight: 500;
+          padding: 5px 13px;
+          border: 1.5px solid #e8eaef;
+          border-radius: 99px;
+          background: #fff;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.12s;
+        }
+        .hf-filter-btn:hover {
+          border-color: #93c5fd;
+          background: #f0f7ff;
+          color: #185FA5;
+        }
+        .hf-filter-btn.active {
+          background: #eff6ff;
+          color: #185FA5;
+          border-color: #93c5fd;
+        }
 
-              {/* SEO: keyword-rich description paragraph — fully crawlable */}
-              <p className="text-slate-500 text-xl max-w-lg leading-relaxed font-light">
-                Hire-Flow is India's smart <strong className="font-medium text-slate-600">job search and hiring management platform</strong>.
-                Browse thousands of fresher, remote, and senior-level jobs — or post openings
-                and manage your entire recruitment pipeline in one place.
-              </p>
+        /* ── JOB CARDS ── */
+        .hf-jobs {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .hf-job-card {
+          background: #fff;
+          border: 1.5px solid #e8eaef;
+          border-radius: 14px;
+          padding: 1.1rem 1.25rem;
+          display: flex;
+          gap: 1rem;
+          align-items: flex-start;
+          cursor: pointer;
+          transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .hf-job-card:hover {
+          border-color: #93c5fd;
+          box-shadow: 0 2px 12px rgba(24,95,165,0.07);
+        }
+        .hf-job-logo {
+          width: 42px;
+          height: 42px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 700;
+          color: #fff;
+          flex-shrink: 0;
+          letter-spacing: 0.5px;
+        }
+        .hf-job-main {
+          flex: 1;
+          min-width: 0;
+        }
+        .hf-job-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #1a1f36;
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .hf-job-co {
+          font-size: 13px;
+          color: #6b7280;
+          margin-bottom: 9px;
+        }
+        .hf-job-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+        .hf-tag {
+          font-size: 11px;
+          font-weight: 500;
+          padding: 3px 9px;
+          border-radius: 99px;
+          background: #f3f4f6;
+          color: #6b7280;
+          border: 1px solid #e8eaef;
+        }
+        .hf-tag-remote {
+          background: #eef9f5;
+          color: #0d7a56;
+          border-color: #b3e6d3;
+        }
+        .hf-tag-new {
+          background: #eff6ff;
+          color: #185FA5;
+          border-color: #bfdbfe;
+        }
+        .hf-job-right {
+          text-align: right;
+          flex-shrink: 0;
+        }
+        .hf-job-salary {
+          font-size: 13px;
+          font-weight: 600;
+          color: #1a1f36;
+          margin-bottom: 3px;
+        }
+        .hf-job-time {
+          font-size: 11px;
+          color: #9ca3af;
+          margin-bottom: 8px;
+        }
+        .hf-save-btn {
+          padding: 5px 13px;
+          font-size: 12px;
+          font-weight: 500;
+          background: transparent;
+          border: 1.5px solid #e8eaef;
+          border-radius: 8px;
+          color: #6b7280;
+          cursor: pointer;
+          transition: all 0.12s;
+        }
+        .hf-save-btn:hover {
+          background: #f3f4f6;
+        }
+        .hf-save-btn.saved {
+          background: #eff6ff;
+          color: #185FA5;
+          border-color: #93c5fd;
+        }
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                <button
-                  className="group px-8 py-4 bg-slate-900 text-white font-medium rounded-full shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-                  onClick={() => navigate("/hr/register")}
-                  aria-label="Start hiring — post a job on Hire-Flow"
-                >
-                  Start Hiring
-                  <FaArrowRight className="group-hover:translate-x-1 transition-transform" aria-hidden="true" />
-                </button>
+        /* ── LOAD MORE ── */
+        .hf-load-more {
+          width: 100%;
+          margin-top: 1rem;
+          padding: 12px;
+          background: #fff;
+          border: 1.5px solid #e8eaef;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #6b7280;
+          cursor: pointer;
+          transition: background 0.12s, border-color 0.12s;
+        }
+        .hf-load-more:hover {
+          background: #f9fafb;
+          border-color: #93c5fd;
+          color: #185FA5;
+        }
 
-                <button
-                  className="px-8 py-4 bg-white text-slate-700 font-medium rounded-full border border-slate-200 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all duration-300"
-                  onClick={() => navigate("/register")}
-                  aria-label="Find a job — browse thousands of openings"
-                >
-                  Find a Job
-                </button>
-              </div>
+        /* ── POPULAR SEARCHES ── */
+        .hf-popular {
+          margin-top: 2rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid #e8eaef;
+        }
+        .hf-popular-tags {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+        .hf-popular-tag {
+          font-size: 12px;
+          font-weight: 500;
+          padding: 6px 14px;
+          border: 1.5px solid #e8eaef;
+          border-radius: 99px;
+          background: #fff;
+          color: #6b7280;
+          text-decoration: none;
+          transition: all 0.12s;
+        }
+        .hf-popular-tag:hover {
+          background: #eff6ff;
+          color: #185FA5;
+          border-color: #93c5fd;
+        }
 
-              {/*
-                SEO: <dl> is semantic for name/value pairs.
-                Screen readers and crawlers understand these as stats.
-              */}
-              <dl className="flex gap-8 pt-8 border-t border-slate-200/60">
-                <div>
-                  <dd className="text-3xl font-bold text-slate-900">10k+</dd>
-                  <dt className="text-sm text-slate-500 font-medium">Companies Hiring</dt>
-                </div>
-                <div>
-                  <dd className="text-3xl font-bold text-slate-900">2M+</dd>
-                  <dt className="text-sm text-slate-500 font-medium">Registered Candidates</dt>
-                </div>
-                <div>
-                  <dd className="text-3xl font-bold text-slate-900">99%</dd>
-                  <dt className="text-sm text-slate-500 font-medium">Satisfaction Rate</dt>
-                </div>
-              </dl>
+        @media (max-width: 600px) {
+          .hf-hero { padding: 1.75rem 1.25rem 1.5rem; }
+          .hf-search { flex-direction: column; }
+          .hf-search-select { width: 100%; }
+          .hf-search-btn { width: 100%; text-align: center; }
+          .hf-stats { gap: 1.25rem; }
+          .hf-job-right { display: none; }
+        }
+      `}</style>
+
+      <div className="hf-page">
+        <div className="hf-inner">
+
+          {/* ── HERO ── */}
+          <section className="hf-hero">
+            <div className="hf-badge">
+              <span className="hf-badge-dot" />
+              11,200+ openings today
             </div>
 
-            {/* RIGHT: dashboard card — visual only */}
-            <div className="flex flex-col gap-6 justify-center" aria-hidden="true">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-2xl rounded-3xl border border-white/60 shadow-2xl" />
-                <div className="relative p-8">
-                  <div className="flex justify-between items-start mb-8">
-                    <div>
-                      <p className="text-xl font-bold text-slate-800">Dashboard Overview</p>
-                      <p className="text-sm text-slate-500">Real-time analytics</p>
-                    </div>
-                    <div className="p-2 bg-white rounded-lg shadow-sm">
-                      <FaChartLine className="text-indigo-500" />
-                    </div>
-                  </div>
-                  <div className="h-40 flex items-end justify-between gap-2 mb-8">
-                    {[35, 55, 40, 70, 50, 85, 65, 90, 75, 60, 80, 95].map((h, i) => (
-                      <div
-                        key={i}
-                        className="w-full bg-gradient-to-t from-indigo-100 to-indigo-500/80 rounded-t-md opacity-80 hover:opacity-100 transition-all duration-300"
-                        style={{ height: `${h}%` }}
-                      />
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <GlassStat label="Interviews" value="24" trend="+12%" />
-                    <GlassStat label="Offers" value="8" trend="+5%" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white/80 backdrop-blur-xl p-4 rounded-2xl border border-white shadow-lg flex items-center gap-4 animate-[float_6s_ease-in-out_infinite] md:translate-x-12">
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-                  <FaClipboardCheck />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-800">New Application</p>
-                  <p className="text-xs text-slate-500">Sarah J. applied for Senior Dev</p>
-                </div>
-                <div className="ml-auto text-xs font-mono text-slate-400 shrink-0">2m ago</div>
-              </div>
-            </div>
-          </article>
-
-          {/* ── JOB CATEGORIES SECTION ────────────────────────────────────────
-              SEO: this section creates crawlable internal links with keyword-rich
-              anchor text. Google follows these links and indexes the category pages.
-              Each <a> tag is a keyword signal: "software engineering jobs india" etc.
-          ──────────────────────────────────────────────────────────────────── */}
-          <section aria-labelledby="categories-heading">
-            <h2
-              id="categories-heading"
-              className="text-2xl font-bold text-slate-800 mb-2"
-            >
-              Browse Jobs by Category
-            </h2>
-            <p className="text-slate-500 mb-8 text-sm">
-              Thousands of verified job openings across India — updated daily.
+            <h1>
+              Find your next job<br />
+              <span>in India</span>
+            </h1>
+            <p>
+              Fresher, remote, senior — browse thousands of verified openings
+              across India and apply in one click.
             </p>
 
-            <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" role="list">
-              {JOB_CATEGORIES.map((cat) => (
+            <div className="hf-search">
+              <input
+                className="hf-search-input"
+                type="text"
+                placeholder="Job title, skills, or company..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                aria-label="Search jobs"
+              />
+              <select
+                className="hf-search-select"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                aria-label="Select location"
+              >
+                {["All India","Bangalore","Mumbai","Hyderabad","Kerala","Chennai","Remote"].map((l) => (
+                  <option key={l}>{l}</option>
+                ))}
+              </select>
+              <button className="hf-search-btn" onClick={handleSearch}>
+                Search jobs
+              </button>
+            </div>
+
+            <dl className="hf-stats">
+              {[
+                { val: "2M+",  lbl: "Registered candidates" },
+                { val: "10k+", lbl: "Hiring companies"       },
+                { val: "99%",  lbl: "Satisfaction rate"      },
+              ].map(({ val, lbl }) => (
+                <div key={lbl}>
+                  <dd className="hf-stat-val">{val}</dd>
+                  <dt className="hf-stat-lbl">{lbl}</dt>
+                </div>
+              ))}
+            </dl>
+          </section>
+
+          {/* ── CATEGORIES ── */}
+          <p className="hf-section-label">Browse by category</p>
+          <nav aria-label="Job categories">
+            <ul className="hf-cats" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {JOB_CATEGORIES.map((cat, i) => (
                 <li key={cat.href}>
                   <a
                     href={cat.href}
-                    className="group flex flex-col items-center gap-3 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 hover:-translate-y-1 transition-all duration-300 text-center"
+                    className={`hf-cat${activeCat === i ? " active" : ""}`}
+                    onClick={(e) => { e.preventDefault(); setActiveCat(i); }}
                     title={`${cat.label} jobs in India`}
                   >
-                    <span className="text-2xl text-indigo-400 group-hover:text-indigo-600 transition-colors" aria-hidden="true">
-                      {cat.icon}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-700 group-hover:text-indigo-700 leading-snug">
-                      {cat.label}
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">{cat.count}</span>
+                    <span className="hf-cat-icon" aria-hidden="true">{cat.icon}</span>
+                    <span className="hf-cat-lbl">{cat.label}</span>
+                    <span className="hf-cat-count">{cat.count}</span>
                   </a>
                 </li>
               ))}
             </ul>
-          </section>
+          </nav>
 
-          {/* ── QUICK LINKS FOR CRAWLERS ──────────────────────────────────────
-              SEO: visually subtle but gives Google crawlable keyword-rich links
-              for popular search intents like "fresher jobs", "remote jobs india"
-          ──────────────────────────────────────────────────────────────────── */}
-          <section aria-labelledby="popular-searches-heading" className="mt-16 pt-10 border-t border-slate-100">
-            <h2
-              id="popular-searches-heading"
-              className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4"
-            >
-              Popular Searches
-            </h2>
-            <ul className="flex flex-wrap gap-2" role="list">
-              {[
-                { label: "Fresher Jobs",              href: "/candidate/jobs?experience=fresher"         },
-                { label: "Remote Jobs India",         href: "/candidate/jobs?type=remote"                },
-                { label: "Work From Home",            href: "/candidate/jobs?type=work-from-home"        },
-                { label: "IT Jobs Bangalore",         href: "/candidate/jobs?location=bangalore&cat=it"  },
-                { label: "Jobs in Kerala",            href: "/candidate/jobs?location=kerala"            },
-                { label: "Part Time Jobs",            href: "/candidate/jobs?type=part-time"             },
-                { label: "Internships India",         href: "/candidate/jobs?type=internship"            },
-                { label: "Python Developer Jobs",     href: "/candidate/jobs?q=python-developer"         },
-                { label: "React Developer Jobs",      href: "/candidate/jobs?q=react-developer"          },
-                { label: "Data Analyst Jobs",         href: "/candidate/jobs?q=data-analyst"             },
-                { label: "Post a Job Free",           href: "/candidate/post-job"                        },
-                { label: "HR Management Software",    href: "/candidate/features/hr-management"          },
-              ].map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="px-4 py-2 rounded-full text-xs font-medium bg-white text-slate-600 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all duration-200"
+          {/* ── FILTERS ── */}
+          <p className="hf-section-label">Recommended for you</p>
+          <div className="hf-filters" role="group" aria-label="Job filters">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                className={`hf-filter-btn${activeFilter === f ? " active" : ""}`}
+                onClick={() => setActiveFilter(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          {/* ── JOB CARDS ── */}
+          <div className="hf-jobs" role="list">
+            {SAMPLE_JOBS.slice(0, visibleCount).map((job, idx) => (
+              <article
+                key={idx}
+                className="hf-job-card"
+                role="listitem"
+                onClick={() => navigate(`/candidate/jobs/${idx}`)}
+                aria-label={`${job.title} at ${job.company}`}
+              >
+                <div
+                  className="hf-job-logo"
+                  style={{ background: job.logoColor }}
+                  aria-hidden="true"
+                >
+                  {job.logo}
+                </div>
+
+                <div className="hf-job-main">
+                  <div className="hf-job-title">{job.title}</div>
+                  <div className="hf-job-co">{job.company} · {job.location} · {job.type}</div>
+                  <div className="hf-job-tags">
+                    {job.isNew    && <span className="hf-tag hf-tag-new">New</span>}
+                    {job.isRemote && <span className="hf-tag hf-tag-remote">Remote</span>}
+                    {job.tags.map((t) => (
+                      <span key={t} className="hf-tag">{t}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="hf-job-right">
+                  <div className="hf-job-salary">{job.salary}</div>
+                  <div className="hf-job-time">{job.posted}</div>
+                  <button
+                    className={`hf-save-btn${savedJobs.has(idx) ? " saved" : ""}`}
+                    onClick={(e) => toggleSave(e, idx)}
+                    aria-label={savedJobs.has(idx) ? "Unsave job" : "Save job"}
                   >
+                    {savedJobs.has(idx) ? "Saved ✓" : "Save"}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {visibleCount < SAMPLE_JOBS.length && (
+            <button
+              className="hf-load-more"
+              onClick={() => setVisibleCount((v) => Math.min(v + 2, SAMPLE_JOBS.length))}
+            >
+              Load more jobs
+            </button>
+          )}
+
+          {/* ── POPULAR SEARCHES ── */}
+          <nav className="hf-popular" aria-labelledby="popular-heading">
+            <p className="hf-section-label" id="popular-heading">Popular searches</p>
+            <ul className="hf-popular-tags" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {POPULAR.map((link) => (
+                <li key={link.href}>
+                  <a href={link.href} className="hf-popular-tag">
                     {link.label}
                   </a>
                 </li>
               ))}
             </ul>
-          </section>
+          </nav>
 
-        </main>
-
-      
+        </div>
       </div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) translateX(3rem); }
-          50%       { transform: translateY(-10px) translateX(3rem); }
-        }
-        @media (max-width: 768px) {
-          @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50%       { transform: translateY(-10px); }
-          }
-        }
-      `}</style>
     </>
-  );
-}
-
-function GlassStat({ label, value, trend }) {
-  return (
-    <div className="p-4 rounded-xl bg-white/50 border border-white/60 backdrop-blur-sm">
-      <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">{label}</p>
-      <div className="flex items-end justify-between">
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-        <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">{trend}</span>
-      </div>
-    </div>
   );
 }

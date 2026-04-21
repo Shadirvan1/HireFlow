@@ -33,7 +33,7 @@ def get_api_key(api_key: str = Security(api_key_header)):
 
 
 app.include_router(
-    resume_api_router, 
+    resume_api_router,
     prefix="/api/ai", 
     dependencies=[Depends(get_api_key)]
 )
