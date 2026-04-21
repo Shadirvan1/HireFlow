@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   MapPin, IndianRupee, ChevronLeft, 
-  Upload, Send, CheckCircle2, Clock, Briefcase, Mail, User, FileText
+  Upload, Send, CheckCircle2, Clock, Briefcase, User, FileText
 } from 'lucide-react';
 import api from '../../api/api';
 
@@ -17,9 +17,9 @@ export default function ApplyJob() {
 
   const [formData, setFormData] = useState({
     full_name: '',
-    email: '',
     cover_letter: '',
     resume: null
+    // REMOVED email from initial state
   });
 
   useEffect(() => {
@@ -29,11 +29,11 @@ export default function ApplyJob() {
         setData(res.data);
         
         if (res.data.candidate) {
-          const { first_name, last_name, user } = res.data.candidate;
+          const { first_name, last_name } = res.data.candidate;
           setFormData(prev => ({
             ...prev,
-            full_name: `${first_name} ${last_name}`.trim(),
-            email: user?.email || ''
+            full_name: `${first_name} ${last_name}`.trim()
+            // REMOVED email mapping here
           }));
         }
       } catch (err) {
@@ -63,7 +63,7 @@ export default function ApplyJob() {
     const uploadData = new FormData();
     uploadData.append('job', jobId);
     uploadData.append('full_name', formData.full_name);
-    uploadData.append('email', formData.email);
+    // REMOVED email append
     uploadData.append('cover_letter', formData.cover_letter);
     uploadData.append('resume', formData.resume);
 
@@ -184,21 +184,7 @@ export default function ApplyJob() {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Email Address</label>
-              <div className="relative">
-                <Mail size={18} className="absolute left-4 top-4 text-slate-400" />
-                <input
-                  required
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="john@company.com"
-                  className="w-full p-4 pl-12 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all font-medium"
-                />
-              </div>
-            </div>
+            {/* EMAIL SECTION REMOVED FROM HERE */}
 
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-slate-400 ml-1">Cover Letter</label>
@@ -253,7 +239,6 @@ export default function ApplyJob() {
             </button>
           </form>
         </div>
-
       </div>
     </div>
   );
