@@ -33,15 +33,16 @@ export default function AIChatButton() {
       
       let fetchedHistory = response.data.history || [];
       
-      // FIX: Enhanced sorting. 
-      // If timestamps are equal, we check if the backend provided an ID or order.
-      // If not, we rely on the array order returned by the server.
+  
       const sortedHistory = [...fetchedHistory].sort((a, b) => {
-        const timeA = new Date(a.timestamp).getTime();
-        const timeB = new Date(b.timestamp).getTime();
-        if (timeA !== timeB) return timeA - timeB;
-        return 0; // Keep original server order if timestamps match
+      const timeA = new Date(a.timestamp).getTime();
+      const timeB = new Date(b.timestamp).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      if (a.role === "user" && b.role === "ai") return -1;
+      if (a.role === "ai" && b.role === "user") return 1;
+      return 0;
       });
+      
 
       if (timestamp) {
         const container = scrollRef.current;
@@ -98,8 +99,7 @@ export default function AIChatButton() {
         ? response.data.response 
         : JSON.stringify(response.data.response);
 
-      // FIX: Ensure bot timestamp is ALWAYS strictly greater than user timestamp 
-      // to prevent "flipping" on re-render if the server is too fast.
+
       const botTimestamp = Math.max(Date.now(), userTimestamp + 1);
 
       const botResponse = { 

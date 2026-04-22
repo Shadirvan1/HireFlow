@@ -90,3 +90,4 @@ class ChatHistoryView(APIView):
 
         messages = get_chat_history(room_name)
         return Response(messages, status=200)
+    
