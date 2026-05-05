@@ -46,3 +46,4 @@ class JWTAuthMiddleware:
             scope["user"] = AnonymousUser()
 
         return await self.app(scope, receive, send)
+        

@@ -162,10 +162,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [
-                f"rediss://{REDIS_HOST}:{REDIS_PORT}/0"   
-                
-            ],
+            "hosts": [f"rediss://{REDIS_HOST}:{REDIS_PORT}/0"],
         },
     },
 }
@@ -255,6 +252,9 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD"),
         "HOST": os.getenv("DB_HOST", "localhost"),
         "PORT": os.getenv("DB_PORT"),
+        "OPTIONS": {
+            "sslmode": "require",
+        },
     }
 }
 
